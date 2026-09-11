@@ -9,3 +9,4 @@ class Config:
         "DATABASE_URL", f"sqlite:///{os.path.join(BASE_DIR, 'ridgeline.db')}"
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    AUTO_SEED = True

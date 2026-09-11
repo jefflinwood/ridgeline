@@ -56,8 +56,9 @@ def create_app(config_object="config.Config"):
         from flask import render_template
         return render_template("errors/403.html"), 403
 
-    with app.app_context():
-        from app.bootstrap import ensure_seeded
-        ensure_seeded()
+    if app.config.get("AUTO_SEED", True):
+        with app.app_context():
+            from app.bootstrap import ensure_seeded
+            ensure_seeded()
 
     return app

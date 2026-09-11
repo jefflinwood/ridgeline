@@ -41,6 +41,18 @@ reset to a clean demo state. (The app also auto-creates and seeds an empty
 database on first boot — see "Deploying to Render" — but won't touch one
 that already has data.)
 
+## Testing
+
+Install the development dependencies and run the test suite:
+
+```bash
+pip install -r requirements-dev.txt
+pytest
+```
+
+Tests use an isolated in-memory SQLite database and never read, reset, or
+modify `ridgeline.db`.
+
 ## Using this for the Claude training exercises
 
 Three integration points, each independent of the others:
