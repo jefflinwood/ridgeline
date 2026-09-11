@@ -32,6 +32,14 @@
   <section class="panel">
     <h2>Status</h2>
     <p><span class="badge badge-{{ order.status }}">{{ order.status }}</span></p>
+    <dl class="deflist order-dates">
+      <dt>Due</dt>
+      <dd>
+        {{ order.due_date.strftime('%b %-d, %Y') if order.due_date else 'Not set' }}
+        {% if order.is_overdue %}<span class="badge badge-overdue">Overdue</span>{% endif %}
+      </dd>
+      <dt>Ship</dt><dd>{{ order.requested_ship_date.strftime('%b %-d, %Y') if order.requested_ship_date else 'Not set' }}</dd>
+    </dl>
     {% if current_user.is_staff %}
     <form method="post" action="{{ url_for('orders.update_status', order_id=order.id) }}" class="inline-form">
       <select name="status">
@@ -40,6 +48,11 @@
         {% endfor %}
       </select>
       <button type="submit" class="btn btn-secondary">Update</button>
+    </form>
+    <form method="post" action="{{ url_for('orders.update_due_date', order_id=order.id) }}" class="inline-form due-date-form">
+      <label for="due_date">Delivery due</label>
+      <input id="due_date" name="due_date" type="date" min="{{ order.requested_ship_date.isoformat() if order.requested_ship_date else '' }}" value="{{ order.due_date.isoformat() if order.due_date else '' }}" required>
+      <button type="submit" class="btn btn-secondary">Save</button>
     </form>
     {% endif %}
   </section>

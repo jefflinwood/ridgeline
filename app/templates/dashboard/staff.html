@@ -30,14 +30,14 @@
     <h2>Open orders</h2>
     {% if open_orders %}
     <table class="table">
-      <thead><tr><th>Order</th><th>Account</th><th>Status</th><th>Placed</th></tr></thead>
+      <thead><tr><th>Order</th><th>Account</th><th>Status</th><th>Due</th></tr></thead>
       <tbody>
         {% for order in open_orders[:8] %}
-        <tr>
+        <tr class="{{ 'is-overdue' if order.is_overdue }}">
           <td><a href="{{ url_for('orders.detail', order_id=order.id) }}">{{ order.order_number }}</a></td>
           <td>{{ order.customer.name }}</td>
           <td><span class="badge badge-{{ order.status }}">{{ order.status }}</span></td>
-          <td>{{ order.order_date.strftime('%b %-d') }}</td>
+          <td>{{ order.due_date.strftime('%b %-d') if order.due_date else '—' }}{% if order.is_overdue %} <span class="badge badge-overdue">Overdue</span>{% endif %}</td>
         </tr>
         {% endfor %}
       </tbody>

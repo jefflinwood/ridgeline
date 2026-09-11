@@ -198,7 +198,7 @@ h2 { font-size: 1.15rem; margin-bottom: 0.8em; }
 /* ---------------- Data tables ---------------- */
 
 .table-scroll { overflow-x: auto; }
-.orders-table { min-width: 800px; }
+.orders-table { min-width: 920px; }
 .shipping-loads-table { min-width: 980px; }
 
 .orders-panel div.dt-container {
@@ -249,6 +249,8 @@ h2 { font-size: 1.15rem; margin-bottom: 0.8em; }
   background: #FAF4E8;
 }
 
+.table tr.is-overdue > td { background: #FFF7F3; }
+
 /* ---------------- Stats ---------------- */
 
 .stat-row {
@@ -297,6 +299,7 @@ h2 { font-size: 1.15rem; margin-bottom: 0.8em; }
 .badge-ready { background: #DEE7EE; color: #3E6482; }
 .badge-in_transit { background: var(--sage-soft); color: var(--sage); }
 .badge-exception { background: var(--rust-soft); color: var(--rust); }
+.badge-overdue { background: var(--rust-soft); color: var(--rust); margin-left: 4px; }
 
 /* ---------------- Filters / chips ---------------- */
 
@@ -353,6 +356,10 @@ input:focus, select:focus, textarea:focus {
 
 .inline-form { display: flex; gap: 8px; align-items: center; }
 .inline-form select { padding: 6px 8px; }
+.due-date-form { margin-top: 10px; }
+.due-date-form label { color: var(--ink-soft); font-size: 0.82rem; }
+.due-date-form input { padding: 6px 8px; }
+.inline-form .btn { margin-top: 0; }
 
 .line-items { border: none; padding: 0; margin: 10px 0; }
 .line-items legend { font-size: 0.85rem; color: var(--ink-soft); padding: 0; }
@@ -406,6 +413,7 @@ input:focus, select:focus, textarea:focus {
 .deflist { display: grid; grid-template-columns: 100px 1fr; gap: 6px 12px; font-size: 0.92rem; }
 .deflist dt { color: var(--ink-soft); }
 .deflist dd { margin: 0; }
+.order-dates { margin-bottom: 14px; }
 
 .notes { background: var(--sage-soft); border-radius: 6px; padding: 12px 14px; font-size: 0.9rem; margin-top: 12px; }
 

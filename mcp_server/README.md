@@ -45,6 +45,7 @@ and set `RIDGELINE_API_KEY` to match whatever you set as the
 | `get_pending_orders` | Orders not yet delivered/cancelled, optionally by type |
 | `get_order` | Full detail + line items for one order |
 | `update_order_status` | Move an order to a new status (write) |
+| `update_order_due_date` | Set an order's delivery deadline (write) |
 | `get_shipping_plan` | Parcel shipments and truck loads, optionally by method/status |
 | `get_low_stock` | Green coffee lots and roasted products running low |
 | `get_account_summary` | Look up an account by name — contact, orders, subscriptions |

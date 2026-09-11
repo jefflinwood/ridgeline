@@ -1,3 +1,5 @@
+from datetime import date
+
 from flask import Blueprint, render_template
 from flask_login import login_required, current_user
 
@@ -11,6 +13,7 @@ bp = Blueprint("dashboard", __name__)
 def index():
     if current_user.is_staff:
         open_orders = Order.query.filter(Order.status.notin_(["delivered", "cancelled"])).all()
+        open_orders.sort(key=lambda order: order.due_date or date.max)
         low_lots = [lot for lot in GreenCoffeeLot.query.all() if lot.is_low]
         active_subs = Subscription.query.filter_by(status="active").count()
         wholesale_count = Customer.query.filter_by(type="wholesale").count()

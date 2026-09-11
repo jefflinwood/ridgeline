@@ -44,6 +44,9 @@
       <label for="requested_ship_date">Requested ship date</label>
       <input id="requested_ship_date" name="requested_ship_date" type="date">
 
+      <label for="due_date">Delivery due date</label>
+      <input id="due_date" name="due_date" type="date" required>
+
       <div id="truck-fields" class="truck-fields" hidden>
         <label for="warehouse_id">Receiving warehouse</label>
         <select id="warehouse_id" name="warehouse_id">
@@ -79,6 +82,8 @@
   const form = document.querySelector('#order-form');
   const customerSelect = document.querySelector('#customer_id');
   const shippingMethod = document.querySelector('#shipping_method');
+  const requestedShipDate = document.querySelector('#requested_ship_date');
+  const dueDate = document.querySelector('#due_date');
   const truckOption = shippingMethod.querySelector('option[value="delivery_truck"]');
   const truckFields = document.querySelector('#truck-fields');
   const warehouseSelect = document.querySelector('#warehouse_id');
@@ -133,6 +138,10 @@
   customerSelect?.addEventListener('change', updateShippingFields);
   shippingMethod.addEventListener('change', updateShippingFields);
   warehouseSelect.addEventListener('change', updateServices);
+  requestedShipDate.addEventListener('change', () => {
+    dueDate.min = requestedShipDate.value;
+    if (dueDate.value && dueDate.value < requestedShipDate.value) dueDate.value = requestedShipDate.value;
+  });
   updateShippingFields();
 </script>
 {% endblock %}

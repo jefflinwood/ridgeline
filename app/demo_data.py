@@ -8,7 +8,7 @@ from datetime import date, datetime, timedelta
 from app import db
 from app.models import (
     User, Customer, Product, GreenCoffeeLot, RoastBatch, Order, OrderItem, Subscription,
-    Warehouse, TruckingService, Shipment,
+    Warehouse, TruckingService, Shipment, OrderDueDate,
     ROLE_ADMIN, ROLE_STAFF, ROLE_CUSTOMER,
 )
 
@@ -170,6 +170,18 @@ def ensure_shipping_seeded():
                 tracking_number=(f"DEMO-{method.upper()}-{order.id:05d}"
                                  if shipment_status in ("in_transit", "delivered") else None),
             ))
+
+    db.session.flush()
+    for order in Order.query.all():
+        if order.delivery_deadline:
+            continue
+        starting_date = order.requested_ship_date or (order.order_date.date() + timedelta(days=4))
+        transit_days = 1 if any(
+            shipment.method == "delivery_truck" for shipment in order.shipments
+        ) else 3
+        order.delivery_deadline = OrderDueDate(
+            due_date=starting_date + timedelta(days=transit_days)
+        )
 
 
 def populate():

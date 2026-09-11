@@ -10,13 +10,14 @@ RIDGELINE_API_KEY (falls back to a dev default). This is intentionally
 simple for a training demo, not a production auth scheme.
 """
 import os
+from datetime import date
 
 from flask import Blueprint, jsonify, request, abort
 
 from app import db
 from app.models import (
     Order, Customer, Product, GreenCoffeeLot, RoastBatch, Subscription,
-    Shipment, TruckingService,
+    Shipment, TruckingService, OrderDueDate,
     ORDER_STATUSES,
 )
 
@@ -41,6 +42,8 @@ def order_to_dict(o, include_items=False):
         "status": o.status,
         "order_date": o.order_date.isoformat(),
         "requested_ship_date": o.requested_ship_date.isoformat() if o.requested_ship_date else None,
+        "due_date": o.due_date.isoformat() if o.due_date else None,
+        "is_overdue": o.is_overdue,
         "shipping": o.shipping_summary,
         "shipment_count": len(o.shipments),
         "total": round(o.total_amount, 2),
@@ -185,6 +188,24 @@ def set_order_status(order_id):
             shipment.status = shipment_status
     db.session.commit()
     return jsonify(order_to_dict(o))
+
+
+@bp.route("/orders/<int:order_id>/due-date", methods=["POST"])
+def set_order_due_date(order_id):
+    order = db.session.get(Order, order_id) or abort(404)
+    raw_due_date = (request.get_json(silent=True) or {}).get("due_date", "")
+    try:
+        due_date = date.fromisoformat(raw_due_date)
+    except (TypeError, ValueError):
+        abort(400, description="due_date must use YYYY-MM-DD format")
+    if order.requested_ship_date and due_date < order.requested_ship_date:
+        abort(400, description="due_date cannot be before requested_ship_date")
+    if order.delivery_deadline:
+        order.delivery_deadline.due_date = due_date
+    else:
+        order.delivery_deadline = OrderDueDate(due_date=due_date)
+    db.session.commit()
+    return jsonify(order_to_dict(order))
 
 
 # ---------------- Shipping ----------------

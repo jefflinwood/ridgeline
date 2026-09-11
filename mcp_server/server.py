@@ -72,6 +72,20 @@ def update_order_status(order_id: int, status: str) -> dict:
 
 
 @server.tool()
+def update_order_due_date(order_id: int, due_date: str) -> dict:
+    """Set an order's customer delivery deadline.
+
+    Args:
+        order_id: Numeric order id.
+        due_date: Delivery deadline in YYYY-MM-DD format.
+    """
+    with _client() as c:
+        resp = c.post(f"/orders/{order_id}/due-date", json={"due_date": due_date})
+        resp.raise_for_status()
+        return resp.json()
+
+
+@server.tool()
 def get_shipping_plan(method: Optional[str] = None, status: Optional[str] = None) -> list[dict]:
     """List parcel shipments or delivery-truck loads with destinations and capacity.
 

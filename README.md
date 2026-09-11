@@ -18,7 +18,8 @@ like a real small-business app.
 - **Roast log** — log a batch against a lot; it deducts green weight from
   the lot and adds finished bags to product stock.
 - **Orders** — wholesale (by the case) and retail (by the bag), with status
-  tracking (`pending` → `confirmed` → `roasting` → `shipped` → `delivered`).
+  tracking (`pending` → `confirmed` → `roasting` → `shipped` → `delivered`)
+  and explicit customer delivery due dates.
 - **Shipping** — UPS, FedEx, USPS, and capacity-planned delivery-truck loads
   to customer warehouses, with local, in-state, and interstate carriers.
 - **Subscriptions** — recurring retail orders with pause/resume/cancel.

@@ -6,7 +6,7 @@ from flask_login import login_required, current_user
 
 from app import db
 from app.models import (
-    Order, OrderItem, Customer, Product, Shipment, TruckingService, Warehouse,
+    Order, OrderItem, OrderDueDate, Customer, Product, Shipment, TruckingService, Warehouse,
     ORDER_STATUSES, SHIPPING_METHODS, SHIPPING_METHOD_LABELS, SERVICE_AREAS,
 )
 
@@ -66,6 +66,29 @@ def update_status(order_id):
                 shipment.status = shipment_status
         db.session.commit()
         flash(f"Order {order.order_number} marked {new_status}.", "success")
+    return redirect(url_for("orders.detail", order_id=order.id))
+
+
+@bp.route("/<int:order_id>/due-date", methods=["POST"])
+@login_required
+def update_due_date(order_id):
+    if not current_user.is_staff:
+        abort(403)
+    order = Order.query.get_or_404(order_id)
+    try:
+        due_date = date.fromisoformat(request.form.get("due_date", ""))
+    except ValueError:
+        flash("Enter a valid delivery due date.", "error")
+        return redirect(url_for("orders.detail", order_id=order.id))
+    if order.requested_ship_date and due_date < order.requested_ship_date:
+        flash("The delivery due date cannot be before the requested ship date.", "error")
+        return redirect(url_for("orders.detail", order_id=order.id))
+    if order.delivery_deadline:
+        order.delivery_deadline.due_date = due_date
+    else:
+        order.delivery_deadline = OrderDueDate(due_date=due_date)
+    db.session.commit()
+    flash(f"Order {order.order_number} is due {due_date.strftime('%b %-d, %Y')}.", "success")
     return redirect(url_for("orders.detail", order_id=order.id))
 
 
@@ -137,6 +160,15 @@ def new():
                 flash("Enter a valid requested ship date.", "error")
                 return render_new_order()
 
+        try:
+            due_date = date.fromisoformat(request.form.get("due_date", ""))
+        except ValueError:
+            flash("Enter a valid delivery due date.", "error")
+            return render_new_order()
+        if requested_ship_date and due_date < requested_ship_date:
+            flash("The delivery due date cannot be before the requested ship date.", "error")
+            return render_new_order()
+
         trucking_service = None
         destination = None
         if shipping_method == "delivery_truck":
@@ -170,6 +202,7 @@ def new():
             status="pending",
             order_date=datetime.utcnow(),
             requested_ship_date=requested_ship_date,
+            delivery_deadline=OrderDueDate(due_date=due_date),
             items=items,
             notes=request.form.get("notes", ""),
         )

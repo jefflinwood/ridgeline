@@ -200,6 +200,10 @@ class Order(db.Model):
         "Shipment", back_populates="order", cascade="all, delete-orphan",
         order_by="Shipment.load_number",
     )
+    delivery_deadline = db.relationship(
+        "OrderDueDate", back_populates="order", cascade="all, delete-orphan",
+        uselist=False,
+    )
 
     @property
     def total_amount(self):
@@ -218,6 +222,18 @@ class Order(db.Model):
         if first.method == "delivery_truck":
             return f"{label} ({len(self.shipments)} load{'s' if len(self.shipments) != 1 else ''})"
         return label
+
+    @property
+    def due_date(self):
+        return self.delivery_deadline.due_date if self.delivery_deadline else None
+
+    @property
+    def is_overdue(self):
+        return bool(
+            self.due_date
+            and self.due_date < date.today()
+            and self.status not in ("delivered", "cancelled")
+        )
 
     def __repr__(self):
         return f"<Order {self.order_number}>"
@@ -238,6 +254,18 @@ class OrderItem(db.Model):
     @property
     def line_total(self):
         return float(self.unit_price) * self.quantity
+
+
+class OrderDueDate(db.Model):
+    """Additive one-to-one delivery deadline, compatible with existing databases."""
+
+    __tablename__ = "order_due_dates"
+
+    id = db.Column(db.Integer, primary_key=True)
+    order_id = db.Column(db.Integer, db.ForeignKey("orders.id"), unique=True, nullable=False)
+    due_date = db.Column(db.Date, nullable=False)
+
+    order = db.relationship("Order", back_populates="delivery_deadline")
 
 
 class Warehouse(db.Model):

@@ -28,18 +28,22 @@
       <tr>
         <th>Order</th>
         {% if current_user.is_staff %}<th>Account</th>{% endif %}
-        <th>Type</th><th>Shipping</th><th>Status</th><th>Placed</th><th>Total</th>
+        <th>Type</th><th>Shipping</th><th>Status</th><th>Placed</th><th>Due</th><th>Total</th>
       </tr>
     </thead>
     <tbody>
       {% for order in orders %}
-      <tr>
+      <tr class="{{ 'is-overdue' if order.is_overdue }}">
         <td><a href="{{ url_for('orders.detail', order_id=order.id) }}">{{ order.order_number }}</a></td>
         {% if current_user.is_staff %}<td>{{ order.customer.name }}</td>{% endif %}
         <td>{{ order.order_type }}</td>
         <td>{{ order.shipping_summary }}</td>
         <td><span class="badge badge-{{ order.status }}">{{ order.status }}</span></td>
         <td data-order="{{ order.order_date.isoformat() }}">{{ order.order_date.strftime('%b %-d, %Y') }}</td>
+        <td data-order="{{ order.due_date.isoformat() if order.due_date else '' }}">
+          {{ order.due_date.strftime('%b %-d, %Y') if order.due_date else '—' }}
+          {% if order.is_overdue %}<span class="badge badge-overdue">Overdue</span>{% endif %}
+        </td>
         <td data-order="{{ order.total_amount }}">${{ "%.2f"|format(order.total_amount) }}</td>
       </tr>
       {% endfor %}

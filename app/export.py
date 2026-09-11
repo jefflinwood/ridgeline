@@ -78,6 +78,7 @@ def build_workbook():
     _write_header(ws_orders, [
         "Order Number", "Account", "Type", "Status", "Order Date",
         "Requested Ship", "Item Count", "Total", "Notes", "Shipping", "Shipments / Loads",
+        "Delivery Due",
     ])
     for i, o in enumerate(orders, start=2):
         ws_orders.cell(row=i, column=1, value=o.order_number)
@@ -94,9 +95,12 @@ def build_workbook():
         ws_orders.cell(row=i, column=9, value=o.notes or "")
         ws_orders.cell(row=i, column=10, value=o.shipping_summary)
         ws_orders.cell(row=i, column=11, value=len(o.shipments))
+        ws_orders.cell(row=i, column=12, value=(
+            o.due_date.strftime("%Y-%m-%d") if o.due_date else None
+        ))
     last = max(len(orders) + 1, 2)
-    _style_body(ws_orders, 2, last, 11)
-    _autosize(ws_orders, [18, 22, 11, 12, 13, 15, 11, 12, 34, 24, 18])
+    _style_body(ws_orders, 2, last, 12)
+    _autosize(ws_orders, [18, 22, 11, 12, 13, 15, 11, 12, 34, 24, 18, 15])
 
     # ---------------- Accounts ----------------
     ws_acc = wb.create_sheet("Accounts")
