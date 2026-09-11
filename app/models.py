@@ -14,6 +14,15 @@ CUSTOMER_WHOLESALE = "wholesale"
 CUSTOMER_RETAIL = "retail"
 
 ORDER_STATUSES = ["pending", "confirmed", "roasting", "shipped", "delivered", "cancelled"]
+SHIPPING_METHODS = ["ups", "fedex", "usps", "delivery_truck"]
+SHIPPING_METHOD_LABELS = {
+    "ups": "UPS",
+    "fedex": "FedEx",
+    "usps": "USPS",
+    "delivery_truck": "Delivery Truck",
+}
+SHIPMENT_STATUSES = ["planned", "ready", "in_transit", "delivered", "exception"]
+SERVICE_AREAS = ["local", "in_state", "interstate"]
 SUBSCRIPTION_FREQUENCIES = ["weekly", "biweekly", "monthly"]
 SUBSCRIPTION_STATUSES = ["active", "paused", "cancelled"]
 
@@ -76,6 +85,9 @@ class Customer(db.Model):
     orders = db.relationship("Order", back_populates="customer", cascade="all, delete-orphan")
     subscriptions = db.relationship(
         "Subscription", back_populates="customer", cascade="all, delete-orphan"
+    )
+    warehouses = db.relationship(
+        "Warehouse", back_populates="customer", cascade="all, delete-orphan"
     )
 
     @property
@@ -184,10 +196,28 @@ class Order(db.Model):
 
     customer = db.relationship("Customer", back_populates="orders")
     items = db.relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
+    shipments = db.relationship(
+        "Shipment", back_populates="order", cascade="all, delete-orphan",
+        order_by="Shipment.load_number",
+    )
 
     @property
     def total_amount(self):
         return sum((item.line_total for item in self.items), start=0)
+
+    @property
+    def total_quantity(self):
+        return sum(item.quantity for item in self.items)
+
+    @property
+    def shipping_summary(self):
+        if not self.shipments:
+            return "Unassigned"
+        first = self.shipments[0]
+        label = SHIPPING_METHOD_LABELS.get(first.method, first.method)
+        if first.method == "delivery_truck":
+            return f"{label} ({len(self.shipments)} load{'s' if len(self.shipments) != 1 else ''})"
+        return label
 
     def __repr__(self):
         return f"<Order {self.order_number}>"
@@ -208,6 +238,83 @@ class OrderItem(db.Model):
     @property
     def line_total(self):
         return float(self.unit_price) * self.quantity
+
+
+class Warehouse(db.Model):
+    """A customer receiving location used for truck deliveries."""
+
+    __tablename__ = "warehouses"
+
+    id = db.Column(db.Integer, primary_key=True)
+    customer_id = db.Column(db.Integer, db.ForeignKey("customers.id"), nullable=False)
+    name = db.Column(db.String(160), nullable=False)
+    address = db.Column(db.String(200), nullable=False)
+    city = db.Column(db.String(80), nullable=False)
+    state = db.Column(db.String(80), nullable=False)
+    country = db.Column(db.String(80), default="USA")
+    service_area = db.Column(db.String(20), nullable=False, default="interstate")
+    dock_notes = db.Column(db.Text)
+
+    customer = db.relationship("Customer", back_populates="warehouses")
+    shipments = db.relationship("Shipment", back_populates="warehouse")
+
+    @property
+    def location(self):
+        return f"{self.city}, {self.state}"
+
+
+class TruckingService(db.Model):
+    """A truck carrier's geographic capability and per-load case capacity."""
+
+    __tablename__ = "trucking_services"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(160), unique=True, nullable=False)
+    service_area = db.Column(db.String(20), nullable=False)
+    capacity_cases = db.Column(db.Integer, nullable=False)
+    liftgate = db.Column(db.Boolean, default=False)
+    appointment_delivery = db.Column(db.Boolean, default=False)
+    active = db.Column(db.Boolean, default=True)
+
+    shipments = db.relationship("Shipment", back_populates="trucking_service")
+
+    @property
+    def service_area_label(self):
+        return self.service_area.replace("_", "-").title()
+
+
+class Shipment(db.Model):
+    """One parcel shipment or one physical truck load for an order."""
+
+    __tablename__ = "shipments"
+
+    id = db.Column(db.Integer, primary_key=True)
+    order_id = db.Column(db.Integer, db.ForeignKey("orders.id"), nullable=False)
+    method = db.Column(db.String(30), nullable=False)
+    status = db.Column(db.String(20), nullable=False, default="planned")
+    scheduled_ship_date = db.Column(db.Date)
+    tracking_number = db.Column(db.String(100))
+    trucking_service_id = db.Column(
+        db.Integer, db.ForeignKey("trucking_services.id"), nullable=True
+    )
+    warehouse_id = db.Column(db.Integer, db.ForeignKey("warehouses.id"), nullable=True)
+    load_number = db.Column(db.Integer, nullable=False, default=1)
+    cases = db.Column(db.Integer)
+
+    order = db.relationship("Order", back_populates="shipments")
+    trucking_service = db.relationship("TruckingService", back_populates="shipments")
+    warehouse = db.relationship("Warehouse", back_populates="shipments")
+
+    @property
+    def method_label(self):
+        return SHIPPING_METHOD_LABELS.get(self.method, self.method)
+
+    @property
+    def destination(self):
+        if self.warehouse:
+            return f"{self.warehouse.name} · {self.warehouse.location}"
+        customer = self.order.customer
+        return f"{customer.address} · {customer.city}, {customer.state}"
 
 
 class Subscription(db.Model):

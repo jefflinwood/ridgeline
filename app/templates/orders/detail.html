@@ -44,4 +44,32 @@
     {% endif %}
   </section>
 </div>
+
+<section class="panel">
+  <h2>Shipping</h2>
+  {% if order.shipments %}
+  <div class="shipment-list">
+    {% for shipment in order.shipments %}
+    <article class="shipment-card">
+      <div>
+        <strong>{{ shipment.method_label }}{% if order.shipments|length > 1 %} · Load {{ shipment.load_number }}{% endif %}</strong>
+        <span class="badge badge-{{ shipment.status }}">{{ shipment.status.replace('_', ' ') }}</span>
+      </div>
+      <dl class="deflist">
+        <dt>Destination</dt><dd>{{ shipment.destination }}</dd>
+        {% if shipment.trucking_service %}
+        <dt>Service</dt><dd>{{ shipment.trucking_service.name }}</dd>
+        <dt>Capacity</dt><dd>{{ shipment.cases }} / {{ shipment.trucking_service.capacity_cases }} cases</dd>
+        {% endif %}
+        <dt>Ship date</dt><dd>{{ shipment.scheduled_ship_date.strftime('%b %-d, %Y') if shipment.scheduled_ship_date else 'Not scheduled' }}</dd>
+        {% if shipment.tracking_number %}<dt>Tracking</dt><dd>{{ shipment.tracking_number }}</dd>{% endif %}
+        {% if shipment.warehouse and shipment.warehouse.dock_notes %}<dt>Dock notes</dt><dd>{{ shipment.warehouse.dock_notes }}</dd>{% endif %}
+      </dl>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="empty">Shipping has not been assigned.</p>
+  {% endif %}
+</section>
 {% endblock %}

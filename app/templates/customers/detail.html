@@ -41,6 +41,22 @@
   </section>
 </div>
 
+{% if customer.warehouses %}
+<section class="panel">
+  <h2>Receiving warehouses</h2>
+  <div class="shipment-list">
+    {% for warehouse in customer.warehouses %}
+    <article class="shipment-card">
+      <strong>{{ warehouse.name }}</strong>
+      <p>{{ warehouse.address }}<br>{{ warehouse.city }}, {{ warehouse.state }} {{ warehouse.country }}</p>
+      <span class="badge">{{ warehouse.service_area.replace('_', '-') }}</span>
+      {% if warehouse.dock_notes %}<p class="field-help">{{ warehouse.dock_notes }}</p>{% endif %}
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
 {% if customer.subscriptions %}
 <section class="panel">
   <h2>Subscriptions</h2>

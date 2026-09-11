@@ -16,6 +16,7 @@ from flask import Blueprint, jsonify, request, abort
 from app import db
 from app.models import (
     Order, Customer, Product, GreenCoffeeLot, RoastBatch, Subscription,
+    Shipment, TruckingService,
     ORDER_STATUSES,
 )
 
@@ -40,6 +41,8 @@ def order_to_dict(o, include_items=False):
         "status": o.status,
         "order_date": o.order_date.isoformat(),
         "requested_ship_date": o.requested_ship_date.isoformat() if o.requested_ship_date else None,
+        "shipping": o.shipping_summary,
+        "shipment_count": len(o.shipments),
         "total": round(o.total_amount, 2),
         "notes": o.notes or "",
     }
@@ -49,7 +52,31 @@ def order_to_dict(o, include_items=False):
              "unit_price": float(i.unit_price), "line_total": round(i.line_total, 2)}
             for i in o.items
         ]
+        data["shipments"] = [shipment_to_dict(shipment) for shipment in o.shipments]
     return data
+
+
+def shipment_to_dict(shipment):
+    service = shipment.trucking_service
+    warehouse = shipment.warehouse
+    return {
+        "id": shipment.id,
+        "order_id": shipment.order_id,
+        "order_number": shipment.order.order_number,
+        "method": shipment.method,
+        "method_label": shipment.method_label,
+        "status": shipment.status,
+        "scheduled_ship_date": (
+            shipment.scheduled_ship_date.isoformat() if shipment.scheduled_ship_date else None
+        ),
+        "tracking_number": shipment.tracking_number,
+        "load_number": shipment.load_number,
+        "cases": shipment.cases,
+        "trucking_service": service.name if service else None,
+        "truck_capacity_cases": service.capacity_cases if service else None,
+        "warehouse": warehouse.name if warehouse else None,
+        "destination": shipment.destination,
+    }
 
 
 def customer_to_dict(c):
@@ -149,8 +176,47 @@ def set_order_status(order_id):
     if new_status not in ORDER_STATUSES:
         abort(400, description=f"status must be one of {ORDER_STATUSES}")
     o.status = new_status
+    shipment_status = {
+        "confirmed": "ready", "roasting": "ready", "shipped": "in_transit",
+        "delivered": "delivered", "cancelled": "exception",
+    }.get(new_status)
+    if shipment_status:
+        for shipment in o.shipments:
+            shipment.status = shipment_status
     db.session.commit()
     return jsonify(order_to_dict(o))
+
+
+# ---------------- Shipping ----------------
+
+@bp.route("/shipping/services")
+def list_trucking_services():
+    services = TruckingService.query.order_by(TruckingService.capacity_cases).all()
+    return jsonify([
+        {
+            "id": service.id,
+            "name": service.name,
+            "service_area": service.service_area,
+            "capacity_cases": service.capacity_cases,
+            "liftgate": service.liftgate,
+            "appointment_delivery": service.appointment_delivery,
+            "active": service.active,
+        }
+        for service in services
+    ])
+
+
+@bp.route("/shipments")
+def list_shipments():
+    query = Shipment.query
+    method = request.args.get("method")
+    status = request.args.get("status")
+    if method:
+        query = query.filter_by(method=method)
+    if status:
+        query = query.filter_by(status=status)
+    shipments = query.order_by(Shipment.scheduled_ship_date, Shipment.order_id).all()
+    return jsonify([shipment_to_dict(shipment) for shipment in shipments])
 
 
 # ---------------- Accounts ----------------

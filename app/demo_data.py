@@ -8,10 +8,168 @@ from datetime import date, datetime, timedelta
 from app import db
 from app.models import (
     User, Customer, Product, GreenCoffeeLot, RoastBatch, Order, OrderItem, Subscription,
+    Warehouse, TruckingService, Shipment,
     ROLE_ADMIN, ROLE_STAFF, ROLE_CUSTOMER,
 )
 
 DEFAULT_PASSWORD = "ridgeline123"
+
+
+def ensure_shipping_seeded():
+    """Add shipping reference data and examples without duplicating existing rows."""
+    service_specs = [
+        ("Ridgeline Local Fleet", "local", 24, True, False),
+        ("Keystone Cartage", "in_state", 100, True, True),
+        ("Continental Freight Lines", "interstate", 220, False, True),
+    ]
+    services = {s.name: s for s in TruckingService.query.all()}
+    for name, area, capacity, liftgate, appointment in service_specs:
+        if name not in services:
+            service = TruckingService(
+                name=name, service_area=area, capacity_cases=capacity,
+                liftgate=liftgate, appointment_delivery=appointment,
+            )
+            db.session.add(service)
+            services[name] = service
+
+    customers = {c.name: c for c in Customer.query.all()}
+    new_customer_specs = [
+        ("Allegheny Market Cooperative", "logistics@alleghenymarket.co", "412-555-0182",
+         "1600 Smallman St", "Pittsburgh", "PA", "Multi-site grocery distributor."),
+        ("Keystone Hotel Supply", "receiving@keystonehotelsupply.com", "717-555-0164",
+         "801 Cameron St", "Harrisburg", "PA", "Consolidated receiving for regional hotels."),
+    ]
+    for name, email, phone, address, city, state, notes in new_customer_specs:
+        if name not in customers:
+            customer = Customer(
+                name=name, type="wholesale", email=email, phone=phone,
+                address=address, city=city, state=state, country="USA",
+                currency="USD", notes=notes,
+            )
+            db.session.add(customer)
+            customers[name] = customer
+    db.session.flush()
+
+    def warehouse(customer, name, address, city, state, area, dock_notes=None):
+        existing = next((w for w in customer.warehouses if w.name == name), None)
+        if existing:
+            return existing
+        location = Warehouse(
+            customer=customer, name=name, address=address, city=city, state=state,
+            country=customer.country or "USA", service_area=area, dock_notes=dock_notes,
+        )
+        db.session.add(location)
+        return location
+
+    warehouses = {}
+    for customer in Customer.query.filter_by(type="wholesale").all():
+        area = "local" if customer.city == "Pittsburgh" else (
+            "in_state" if customer.state == "PA" else "interstate"
+        )
+        warehouses[(customer.name, "primary")] = warehouse(
+            customer, "Primary receiving", customer.address, customer.city,
+            customer.state or "—", area,
+        )
+
+    allegheny = customers["Allegheny Market Cooperative"]
+    warehouses[(allegheny.name, "strip")] = warehouse(
+        allegheny, "Strip District Warehouse", "1600 Smallman St", "Pittsburgh", "PA",
+        "local", "Dock 4; liftgate required after 3 p.m.",
+    )
+    warehouses[(allegheny.name, "south")] = warehouse(
+        allegheny, "South Hills Warehouse", "4250 Library Rd", "Bethel Park", "PA",
+        "local", "Call receiving 30 minutes before arrival.",
+    )
+    keystone = customers["Keystone Hotel Supply"]
+    warehouses[(keystone.name, "harrisburg")] = warehouse(
+        keystone, "Harrisburg Distribution Center", "801 Cameron St", "Harrisburg", "PA",
+        "in_state", "Appointment required.",
+    )
+    warehouses[(keystone.name, "philadelphia")] = warehouse(
+        keystone, "Philadelphia Warehouse", "2500 S Columbus Blvd", "Philadelphia", "PA",
+        "in_state", "Use south loading entrance.",
+    )
+    db.session.flush()
+
+    by_sku = {p.sku: p for p in Product.query.all()}
+
+    def case_item(sku, qty):
+        product = by_sku[sku]
+        return OrderItem(
+            product=product, quantity=qty, unit_price=product.wholesale_price_per_case
+        )
+
+    special_orders = [
+        ("WS-20260907-006", allegheny, datetime(2026, 9, 7, 8, 30), date(2026, 9, 12),
+         [case_item("COL-HUI-MD", 34), case_item("BRA-CER-MD", 24)],
+         "Split across both Pittsburgh warehouses."),
+        ("WS-20260908-007", keystone, datetime(2026, 9, 8, 10, 10), date(2026, 9, 14),
+         [case_item("GUA-ANT-MD", 140), case_item("SUM-MAN-DK", 120)],
+         "Three scheduled loads across two regional warehouses."),
+    ]
+    orders = {o.order_number: o for o in Order.query.all()}
+    for number, customer, ordered_at, ship_date, items, notes in special_orders:
+        if number not in orders:
+            order = Order(
+                order_number=number, customer=customer, order_type="wholesale",
+                status="confirmed", order_date=ordered_at,
+                requested_ship_date=ship_date, items=items, notes=notes,
+            )
+            db.session.add(order)
+            orders[number] = order
+    db.session.flush()
+
+    status_map = {
+        "pending": "planned", "confirmed": "ready", "roasting": "ready",
+        "shipped": "in_transit", "delivered": "delivered", "cancelled": "exception",
+    }
+    parcel_methods = ["ups", "fedex", "usps"]
+    for index, order in enumerate(Order.query.order_by(Order.id).all()):
+        if order.shipments:
+            continue
+        shipment_status = status_map.get(order.status, "planned")
+        if order.order_number == "WS-20260907-006":
+            load_specs = [
+                (24, warehouses[(allegheny.name, "strip")]),
+                (24, warehouses[(allegheny.name, "strip")]),
+                (10, warehouses[(allegheny.name, "south")]),
+            ]
+            for load_number, (cases, destination) in enumerate(load_specs, start=1):
+                db.session.add(Shipment(
+                    order=order, method="delivery_truck", status=shipment_status,
+                    scheduled_ship_date=order.requested_ship_date,
+                    trucking_service=services["Ridgeline Local Fleet"],
+                    warehouse=destination, load_number=load_number, cases=cases,
+                ))
+        elif order.order_number == "WS-20260908-007":
+            load_specs = [
+                (100, warehouses[(keystone.name, "harrisburg")]),
+                (100, warehouses[(keystone.name, "philadelphia")]),
+                (60, warehouses[(keystone.name, "philadelphia")]),
+            ]
+            for load_number, (cases, destination) in enumerate(load_specs, start=1):
+                db.session.add(Shipment(
+                    order=order, method="delivery_truck", status=shipment_status,
+                    scheduled_ship_date=order.requested_ship_date,
+                    trucking_service=services["Keystone Cartage"],
+                    warehouse=destination, load_number=load_number, cases=cases,
+                ))
+        elif order.customer.name == "Northside Cafe":
+            db.session.add(Shipment(
+                order=order, method="delivery_truck", status=shipment_status,
+                scheduled_ship_date=order.requested_ship_date,
+                trucking_service=services["Ridgeline Local Fleet"],
+                warehouse=warehouses[(order.customer.name, "primary")],
+                load_number=1, cases=order.total_quantity,
+            ))
+        else:
+            method = parcel_methods[index % len(parcel_methods)]
+            db.session.add(Shipment(
+                order=order, method=method, status=shipment_status,
+                scheduled_ship_date=order.requested_ship_date,
+                tracking_number=(f"DEMO-{method.upper()}-{order.id:05d}"
+                                 if shipment_status in ("in_transit", "delivered") else None),
+            ))
 
 
 def populate():
@@ -191,8 +349,10 @@ def populate():
     ]
     db.session.add_all(users)
 
+    ensure_shipping_seeded()
+
     return {
         "products": len(products), "lots": len(lots), "batches": len(batches),
-        "customers": len(wholesale) + len(retail), "orders": len(orders),
+        "customers": Customer.query.count(), "orders": Order.query.count(),
         "subscriptions": len(subs), "users": len(users),
     }

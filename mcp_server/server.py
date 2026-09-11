@@ -72,6 +72,25 @@ def update_order_status(order_id: int, status: str) -> dict:
 
 
 @server.tool()
+def get_shipping_plan(method: Optional[str] = None, status: Optional[str] = None) -> list[dict]:
+    """List parcel shipments or delivery-truck loads with destinations and capacity.
+
+    Args:
+        method: Optionally filter to ups, fedex, usps, or delivery_truck.
+        status: Optionally filter to planned, ready, in_transit, delivered, or exception.
+    """
+    with _client() as c:
+        params = {}
+        if method:
+            params["method"] = method
+        if status:
+            params["status"] = status
+        resp = c.get("/shipments", params=params)
+        resp.raise_for_status()
+        return resp.json()
+
+
+@server.tool()
 def get_low_stock() -> dict:
     """Return green coffee lots running low (<=15% of what arrived) and
     roasted products with fewer than 5 cases in stock."""

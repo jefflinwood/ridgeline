@@ -198,7 +198,8 @@ h2 { font-size: 1.15rem; margin-bottom: 0.8em; }
 /* ---------------- Data tables ---------------- */
 
 .table-scroll { overflow-x: auto; }
-.orders-table { min-width: 680px; }
+.orders-table { min-width: 800px; }
+.shipping-loads-table { min-width: 980px; }
 
 .orders-panel div.dt-container {
   color: var(--ink-soft);
@@ -292,6 +293,10 @@ h2 { font-size: 1.15rem; margin-bottom: 0.8em; }
 .badge-shipped { background: var(--sage-soft); color: var(--sage); }
 .badge-delivered, .badge-active { background: #DDEBD9; color: #4A7A3D; }
 .badge-cancelled { background: var(--rust-soft); color: var(--rust); }
+.badge-planned { background: #EFE3C8; color: #8A6A21; }
+.badge-ready { background: #DEE7EE; color: #3E6482; }
+.badge-in_transit { background: var(--sage-soft); color: var(--sage); }
+.badge-exception { background: var(--rust-soft); color: var(--rust); }
 
 /* ---------------- Filters / chips ---------------- */
 
@@ -352,6 +357,27 @@ input:focus, select:focus, textarea:focus {
 .line-items { border: none; padding: 0; margin: 10px 0; }
 .line-items legend { font-size: 0.85rem; color: var(--ink-soft); padding: 0; }
 
+.shipping-fields {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 12px 0 4px;
+  padding: 12px 14px 16px;
+}
+
+.shipping-fields legend {
+  color: var(--espresso);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  padding: 0 6px;
+}
+
+.truck-fields { display: flex; flex-direction: column; gap: 6px; }
+.truck-fields[hidden] { display: none; }
+.field-help { color: var(--ink-soft); font-size: 0.78rem; margin: 4px 0 0; }
+
 .line-item {
   display: flex;
   align-items: center;
@@ -382,6 +408,25 @@ input:focus, select:focus, textarea:focus {
 .deflist dd { margin: 0; }
 
 .notes { background: var(--sage-soft); border-radius: 6px; padding: 12px 14px; font-size: 0.9rem; margin-top: 12px; }
+
+.shipment-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.shipment-card {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 14px;
+}
+
+.shipment-card > div {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
 
 .sub-list { list-style: none; margin: 0; padding: 0; }
 .sub-list li {

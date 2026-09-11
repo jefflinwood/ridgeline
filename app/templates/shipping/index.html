@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Shipping · Ridgeline Coffee{% endblock %}
+{% block content %}
+<header class="page-head">
+  <h1>Shipping</h1>
+  <p class="page-sub">Parcel carriers and delivery-truck capacity planning.</p>
+</header>
+
+<div class="stat-row">
+  {% for method, label in shipping_methods.items() %}
+  <div class="stat">
+    <span class="stat-value">{{ method_counts[method] }}</span>
+    <span class="stat-label">{{ label }} shipment{% if method_counts[method] != 1 %}s{% endif %}</span>
+  </div>
+  {% endfor %}
+</div>
+
+<section class="panel">
+  <h2>Trucking services</h2>
+  <table class="table">
+    <thead>
+      <tr><th>Service</th><th>Coverage</th><th>Capacity</th><th>Capabilities</th></tr>
+    </thead>
+    <tbody>
+      {% for service in services %}
+      <tr>
+        <td>{{ service.name }}</td>
+        <td>{{ service.service_area_label }}</td>
+        <td>{{ service.capacity_cases }} cases/load</td>
+        <td>
+          {% set capabilities = [] %}
+          {% if service.liftgate %}{% set _ = capabilities.append('Liftgate') %}{% endif %}
+          {% if service.appointment_delivery %}{% set _ = capabilities.append('Appointments') %}{% endif %}
+          {{ capabilities|join(' · ') or 'Standard dock delivery' }}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="panel">
+  <h2>Truck loads</h2>
+  {% if truck_loads %}
+  <div class="table-scroll">
+    <table class="table shipping-loads-table">
+      <thead>
+        <tr><th>Order</th><th>Account</th><th>Load</th><th>Service</th><th>Destination</th><th>Cases</th><th>Ship date</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        {% for shipment in truck_loads %}
+        <tr>
+          <td><a href="{{ url_for('orders.detail', order_id=shipment.order_id) }}">{{ shipment.order.order_number }}</a></td>
+          <td>{{ shipment.order.customer.name }}</td>
+          <td>{{ shipment.load_number }} of {{ shipment.order.shipments|length }}</td>
+          <td>{{ shipment.trucking_service.name }}</td>
+          <td>{{ shipment.warehouse.name }} · {{ shipment.warehouse.location }}</td>
+          <td>{{ shipment.cases }} / {{ shipment.trucking_service.capacity_cases }}</td>
+          <td>{{ shipment.scheduled_ship_date.strftime('%b %-d, %Y') if shipment.scheduled_ship_date else '—' }}</td>
+          <td><span class="badge badge-{{ shipment.status }}">{{ shipment.status.replace('_', ' ') }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="empty">No truck loads scheduled.</p>
+  {% endif %}
+</section>
+{% endblock %}

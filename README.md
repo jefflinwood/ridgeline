@@ -19,6 +19,8 @@ like a real small-business app.
   the lot and adds finished bags to product stock.
 - **Orders** — wholesale (by the case) and retail (by the bag), with status
   tracking (`pending` → `confirmed` → `roasting` → `shipped` → `delivered`).
+- **Shipping** — UPS, FedEx, USPS, and capacity-planned delivery-truck loads
+  to customer warehouses, with local, in-state, and interstate carriers.
 - **Subscriptions** — recurring retail orders with pause/resume/cancel.
 - **Accounts** — wholesale and retail customer records, including a couple
   of non-US accounts (Toronto, London) if you want an FX angle later.
@@ -98,8 +100,9 @@ All seeded users share the password `ridgeline123`.
 ## Data model at a glance
 
 `User` → optionally linked to a `Customer` (wholesale account or retail
-subscriber) → `Order`s and `Subscription`s. `Product` (roasted SKU) is
-produced from a `GreenCoffeeLot` via a `RoastBatch`. See `app/models.py`
+subscriber) → `Order`s, `Shipment`s, and `Subscription`s. Truck shipments
+connect customer `Warehouse`s to a capacity-limited `TruckingService`.
+`Product` (roasted SKU) is produced from a `GreenCoffeeLot` via a `RoastBatch`. See `app/models.py`
 for the full schema — it's plain SQLAlchemy models, so it maps cleanly onto
 a SQL Server table set if you want to mirror it there for the SQL Server
 demo, or export `Ridgeline_Orders`-style views for the Excel demo.
@@ -115,11 +118,11 @@ app/
   __init__.py            app factory, blueprint registration, calls bootstrap
   bootstrap.py            non-destructive first-boot seeding
   demo_data.py             shared seed data (used by seed.py and bootstrap.py)
-  models.py                SQLAlchemy models
+  models.py                SQLAlchemy models, including shipping and warehouses
   api.py                   internal JSON API (X-API-Key auth), used by MCP server
   export.py, export_routes.py   Excel workbook builder + route
   auth.py, dashboard.py, customers.py, catalog.py,
-  roasting.py, orders.py, subscriptions.py, admin.py   blueprints
+  roasting.py, orders.py, shipping.py, subscriptions.py, admin.py   blueprints
   templates/               Jinja2 templates, one folder per blueprint
   static/css/style.css      design system (single stylesheet)
 mcp_server/

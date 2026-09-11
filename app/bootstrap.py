@@ -7,11 +7,14 @@ never wipes anything, unlike seed.py's CLI reset.
 """
 from app import db
 from app.models import User
-from app.demo_data import populate
+from app.demo_data import ensure_shipping_seeded, populate
 
 
 def ensure_seeded():
     db.create_all()
     if User.query.count() == 0:
         populate()
+        db.session.commit()
+    else:
+        ensure_shipping_seeded()
         db.session.commit()

@@ -28,7 +28,7 @@
       <tr>
         <th>Order</th>
         {% if current_user.is_staff %}<th>Account</th>{% endif %}
-        <th>Type</th><th>Status</th><th>Placed</th><th>Total</th>
+        <th>Type</th><th>Shipping</th><th>Status</th><th>Placed</th><th>Total</th>
       </tr>
     </thead>
     <tbody>
@@ -37,6 +37,7 @@
         <td><a href="{{ url_for('orders.detail', order_id=order.id) }}">{{ order.order_number }}</a></td>
         {% if current_user.is_staff %}<td>{{ order.customer.name }}</td>{% endif %}
         <td>{{ order.order_type }}</td>
+        <td>{{ order.shipping_summary }}</td>
         <td><span class="badge badge-{{ order.status }}">{{ order.status }}</span></td>
         <td data-order="{{ order.order_date.isoformat() }}">{{ order.order_date.strftime('%b %-d, %Y') }}</td>
         <td data-order="{{ order.total_amount }}">${{ "%.2f"|format(order.total_amount) }}</td>
@@ -54,7 +55,7 @@
 <script src="https://cdn.datatables.net/3.0.3/js/dataTables.js"></script>
 <script>
   new DataTable('#orders-table', {
-    order: [[{{ 4 if current_user.is_staff else 3 }}, 'desc']],
+    order: [[{{ 5 if current_user.is_staff else 4 }}, 'desc']],
     pageLength: 10,
     lengthMenu: [10, 25, 50],
     language: {

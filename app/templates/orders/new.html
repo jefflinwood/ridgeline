@@ -7,12 +7,12 @@
 </header>
 
 <section class="panel panel-narrow">
-  <form method="post" class="form-grid">
+  <form method="post" class="form-grid" id="order-form" data-customer-type="{{ customers[0].type if not current_user.is_staff else '' }}">
     {% if current_user.is_staff %}
     <label for="customer_id">Account</label>
     <select id="customer_id" name="customer_id" required>
       {% for c in customers %}
-      <option value="{{ c.id }}">{{ c.name }} ({{ c.type }})</option>
+      <option value="{{ c.id }}" data-customer-type="{{ c.type }}">{{ c.name }} ({{ c.type }})</option>
       {% endfor %}
     </select>
     {% else %}
@@ -31,10 +31,108 @@
       {% endfor %}
     </fieldset>
 
+    <fieldset class="shipping-fields">
+      <legend>Shipping</legend>
+
+      <label for="shipping_method">Method</label>
+      <select id="shipping_method" name="shipping_method" required>
+        {% for value, label in shipping_methods.items() %}
+        <option value="{{ value }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+
+      <label for="requested_ship_date">Requested ship date</label>
+      <input id="requested_ship_date" name="requested_ship_date" type="date">
+
+      <div id="truck-fields" class="truck-fields" hidden>
+        <label for="warehouse_id">Receiving warehouse</label>
+        <select id="warehouse_id" name="warehouse_id">
+          {% for warehouse in warehouses %}
+          <option value="{{ warehouse.id }}" data-customer-id="{{ warehouse.customer_id }}" data-area="{{ warehouse.service_area }}">
+            {{ warehouse.name }} · {{ warehouse.location }}
+          </option>
+          {% endfor %}
+        </select>
+
+        <label for="trucking_service_id">Trucking service</label>
+        <select id="trucking_service_id" name="trucking_service_id">
+          {% for service in trucking_services %}
+          <option value="{{ service.id }}" data-area="{{ service.service_area }}">
+            {{ service.name }} · {{ service.service_area_label }} · {{ service.capacity_cases }} cases/load
+          </option>
+          {% endfor %}
+        </select>
+        <p class="field-help">Loads are calculated automatically from the order's total cases and the selected truck's capacity.</p>
+      </div>
+    </fieldset>
+
     <label for="notes">Notes</label>
     <textarea id="notes" name="notes" rows="2" placeholder="Delivery instructions, rush requests, etc."></textarea>
 
     <button type="submit" class="btn btn-primary">Place order</button>
   </form>
 </section>
+{% endblock %}
+
+{% block page_scripts %}
+<script>
+  const form = document.querySelector('#order-form');
+  const customerSelect = document.querySelector('#customer_id');
+  const shippingMethod = document.querySelector('#shipping_method');
+  const truckOption = shippingMethod.querySelector('option[value="delivery_truck"]');
+  const truckFields = document.querySelector('#truck-fields');
+  const warehouseSelect = document.querySelector('#warehouse_id');
+  const serviceSelect = document.querySelector('#trucking_service_id');
+  const areaRank = {local: 0, in_state: 1, interstate: 2};
+
+  function customerType() {
+    return customerSelect
+      ? customerSelect.selectedOptions[0].dataset.customerType
+      : form.dataset.customerType;
+  }
+
+  function customerId() {
+    return customerSelect
+      ? customerSelect.value
+      : form.querySelector('input[name="customer_id"]').value;
+  }
+
+  function updateWarehouses() {
+    let firstVisible;
+    Array.from(warehouseSelect.options).forEach((option) => {
+      option.hidden = option.dataset.customerId !== customerId();
+      option.disabled = option.hidden;
+      if (!option.hidden && !firstVisible) firstVisible = option;
+    });
+    if (firstVisible) firstVisible.selected = true;
+    updateServices();
+  }
+
+  function updateServices() {
+    const warehouse = warehouseSelect.selectedOptions[0];
+    if (!warehouse) return;
+    let firstEligible;
+    Array.from(serviceSelect.options).forEach((option) => {
+      option.disabled = areaRank[option.dataset.area] < areaRank[warehouse.dataset.area];
+      if (!option.disabled && !firstEligible) firstEligible = option;
+    });
+    if (firstEligible && serviceSelect.selectedOptions[0]?.disabled) firstEligible.selected = true;
+  }
+
+  function updateShippingFields() {
+    const wholesale = customerType() === 'wholesale';
+    truckOption.disabled = !wholesale;
+    if (!wholesale && shippingMethod.value === 'delivery_truck') shippingMethod.value = 'ups';
+    const useTruck = shippingMethod.value === 'delivery_truck';
+    truckFields.hidden = !useTruck;
+    warehouseSelect.required = useTruck;
+    serviceSelect.required = useTruck;
+    if (useTruck) updateWarehouses();
+  }
+
+  customerSelect?.addEventListener('change', updateShippingFields);
+  shippingMethod.addEventListener('change', updateShippingFields);
+  warehouseSelect.addEventListener('change', updateServices);
+  updateShippingFields();
+</script>
 {% endblock %}

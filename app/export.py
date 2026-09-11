@@ -11,7 +11,7 @@ from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter
 
 from app.models import (
-    Order, Customer, Product, GreenCoffeeLot, RoastBatch, Subscription,
+    Order, Customer, Product, GreenCoffeeLot, RoastBatch, Subscription, Shipment,
 )
 
 HEADER_FILL = PatternFill(start_color="3B2A20", end_color="3B2A20", fill_type="solid")
@@ -50,6 +50,7 @@ def build_workbook():
     lots = GreenCoffeeLot.query.order_by(GreenCoffeeLot.lot_code).all()
     batches = RoastBatch.query.order_by(RoastBatch.roast_date).all()
     subs = Subscription.query.order_by(Subscription.customer_id).all()
+    shipments = Shipment.query.order_by(Shipment.order_id, Shipment.load_number).all()
 
     wb = Workbook()
 
@@ -76,7 +77,7 @@ def build_workbook():
     ws_orders = wb.create_sheet("Orders")
     _write_header(ws_orders, [
         "Order Number", "Account", "Type", "Status", "Order Date",
-        "Requested Ship", "Item Count", "Total", "Notes",
+        "Requested Ship", "Item Count", "Total", "Notes", "Shipping", "Shipments / Loads",
     ])
     for i, o in enumerate(orders, start=2):
         ws_orders.cell(row=i, column=1, value=o.order_number)
@@ -91,9 +92,11 @@ def build_workbook():
                              value=f"=SUMIFS('Order Items'!$F$2:$F${MAX_ROW},'Order Items'!$A$2:$A${MAX_ROW},A{i})")
         c8.number_format = CURRENCY_FMT
         ws_orders.cell(row=i, column=9, value=o.notes or "")
+        ws_orders.cell(row=i, column=10, value=o.shipping_summary)
+        ws_orders.cell(row=i, column=11, value=len(o.shipments))
     last = max(len(orders) + 1, 2)
-    _style_body(ws_orders, 2, last, 9)
-    _autosize(ws_orders, [18, 22, 11, 12, 13, 15, 11, 12, 34])
+    _style_body(ws_orders, 2, last, 11)
+    _autosize(ws_orders, [18, 22, 11, 12, 13, 15, 11, 12, 34, 24, 18])
 
     # ---------------- Accounts ----------------
     ws_acc = wb.create_sheet("Accounts")
@@ -205,6 +208,39 @@ def build_workbook():
     last = max(len(subs) + 1, 2)
     _style_body(ws_subs, 2, last, 6)
     _autosize(ws_subs, [22, 22, 12, 10, 11, 15])
+
+    # ---------------- Shipments ----------------
+    ws_ship = wb.create_sheet("Shipments")
+    _write_header(ws_ship, [
+        "Order Number", "Account", "Method", "Status", "Load Number",
+        "Cases", "Trucking Service", "Truck Capacity", "Warehouse",
+        "Destination", "Scheduled Ship", "Tracking Number",
+    ])
+    for i, shipment in enumerate(shipments, start=2):
+        ws_ship.cell(row=i, column=1, value=shipment.order.order_number)
+        ws_ship.cell(row=i, column=2, value=shipment.order.customer.name)
+        ws_ship.cell(row=i, column=3, value=shipment.method_label)
+        ws_ship.cell(row=i, column=4, value=shipment.status)
+        ws_ship.cell(row=i, column=5, value=shipment.load_number)
+        ws_ship.cell(row=i, column=6, value=shipment.cases)
+        ws_ship.cell(row=i, column=7, value=(
+            shipment.trucking_service.name if shipment.trucking_service else ""
+        ))
+        ws_ship.cell(row=i, column=8, value=(
+            shipment.trucking_service.capacity_cases if shipment.trucking_service else None
+        ))
+        ws_ship.cell(row=i, column=9, value=(
+            shipment.warehouse.name if shipment.warehouse else ""
+        ))
+        ws_ship.cell(row=i, column=10, value=shipment.destination)
+        ws_ship.cell(row=i, column=11, value=(
+            shipment.scheduled_ship_date.strftime("%Y-%m-%d")
+            if shipment.scheduled_ship_date else ""
+        ))
+        ws_ship.cell(row=i, column=12, value=shipment.tracking_number or "")
+    last = max(len(shipments) + 1, 2)
+    _style_body(ws_ship, 2, last, 12)
+    _autosize(ws_ship, [18, 24, 16, 13, 12, 10, 26, 16, 28, 34, 15, 24])
 
     wb.active = wb["Orders"]
 

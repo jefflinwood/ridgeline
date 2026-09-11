@@ -29,6 +29,7 @@
         {% if current_user.is_staff %}
         <li><a href="{{ url_for('catalog.inventory') }}" class="{{ 'is-active' if request.endpoint == 'catalog.inventory' }}">Green coffee</a></li>
         <li><a href="{{ url_for('roasting.index') }}" class="{{ 'is-active' if request.blueprint == 'roasting' }}">Roast log</a></li>
+        <li><a href="{{ url_for('shipping.index') }}" class="{{ 'is-active' if request.blueprint == 'shipping' }}">Shipping</a></li>
         {% endif %}
         {% if current_user.is_admin %}
         <li><a href="{{ url_for('admin.users') }}" class="{{ 'is-active' if request.blueprint == 'admin' }}">Users</a></li>

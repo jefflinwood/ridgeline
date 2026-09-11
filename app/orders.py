@@ -1,10 +1,14 @@
 from datetime import date, datetime
+from math import ceil
 
 from flask import Blueprint, render_template, redirect, url_for, request, flash, abort
 from flask_login import login_required, current_user
 
 from app import db
-from app.models import Order, OrderItem, Customer, Product, ORDER_STATUSES
+from app.models import (
+    Order, OrderItem, Customer, Product, Shipment, TruckingService, Warehouse,
+    ORDER_STATUSES, SHIPPING_METHODS, SHIPPING_METHOD_LABELS, SERVICE_AREAS,
+)
 
 bp = Blueprint("orders", __name__, url_prefix="/orders")
 
@@ -53,6 +57,13 @@ def update_status(order_id):
     new_status = request.form.get("status")
     if new_status in ORDER_STATUSES:
         order.status = new_status
+        shipment_status = {
+            "confirmed": "ready", "roasting": "ready", "shipped": "in_transit",
+            "delivered": "delivered", "cancelled": "exception",
+        }.get(new_status)
+        if shipment_status:
+            for shipment in order.shipments:
+                shipment.status = shipment_status
         db.session.commit()
         flash(f"Order {order.order_number} marked {new_status}.", "success")
     return redirect(url_for("orders.detail", order_id=order.id))
@@ -69,6 +80,22 @@ def new():
         customers = [current_user.customer]
 
     products = Product.query.filter_by(active=True).order_by(Product.name).all()
+    customer_ids = [customer.id for customer in customers]
+    warehouses = (
+        Warehouse.query.filter(Warehouse.customer_id.in_(customer_ids))
+        .order_by(Warehouse.customer_id, Warehouse.name).all()
+    )
+    trucking_services = (
+        TruckingService.query.filter_by(active=True)
+        .order_by(TruckingService.capacity_cases).all()
+    )
+
+    def render_new_order():
+        return render_template(
+            "orders/new.html", customers=customers, products=products,
+            warehouses=warehouses, trucking_services=trucking_services,
+            shipping_methods=SHIPPING_METHOD_LABELS,
+        )
 
     if request.method == "POST":
         customer_id = request.form.get("customer_id", type=int)
@@ -95,7 +122,41 @@ def new():
 
         if not items:
             flash("Add at least one product with a quantity.", "error")
-            return render_template("orders/new.html", customers=customers, products=products)
+            return render_new_order()
+
+        shipping_method = request.form.get("shipping_method", "")
+        if shipping_method not in SHIPPING_METHODS:
+            flash("Choose a valid shipping method.", "error")
+            return render_new_order()
+
+        requested_ship_date = None
+        if request.form.get("requested_ship_date"):
+            try:
+                requested_ship_date = date.fromisoformat(request.form["requested_ship_date"])
+            except ValueError:
+                flash("Enter a valid requested ship date.", "error")
+                return render_new_order()
+
+        trucking_service = None
+        destination = None
+        if shipping_method == "delivery_truck":
+            trucking_service = db.session.get(
+                TruckingService, request.form.get("trucking_service_id", type=int)
+            )
+            destination = db.session.get(
+                Warehouse, request.form.get("warehouse_id", type=int)
+            )
+            if customer.type != "wholesale" or not trucking_service or not destination:
+                flash("Truck delivery requires a trucking service and warehouse.", "error")
+                return render_new_order()
+            if not trucking_service.active or destination.customer_id != customer.id:
+                abort(400)
+            if SERVICE_AREAS.index(trucking_service.service_area) < SERVICE_AREAS.index(destination.service_area):
+                flash(
+                    f"{trucking_service.name} does not cover {destination.service_area.replace('_', '-')} deliveries.",
+                    "error",
+                )
+                return render_new_order()
 
         count_today = Order.query.filter(
             db.func.date(Order.order_date) == date.today()
@@ -108,12 +169,33 @@ def new():
             order_type=customer.type,
             status="pending",
             order_date=datetime.utcnow(),
+            requested_ship_date=requested_ship_date,
             items=items,
             notes=request.form.get("notes", ""),
         )
         db.session.add(order)
+        if shipping_method == "delivery_truck":
+            cases_remaining = sum(item.quantity for item in items)
+            load_count = ceil(cases_remaining / trucking_service.capacity_cases)
+            for load_number in range(1, load_count + 1):
+                cases = min(cases_remaining, trucking_service.capacity_cases)
+                order.shipments.append(Shipment(
+                    method=shipping_method, status="planned",
+                    scheduled_ship_date=requested_ship_date,
+                    trucking_service=trucking_service, warehouse=destination,
+                    load_number=load_number, cases=cases,
+                ))
+                cases_remaining -= cases
+        else:
+            order.shipments.append(Shipment(
+                method=shipping_method, status="planned",
+                scheduled_ship_date=requested_ship_date,
+            ))
         db.session.commit()
-        flash(f"Order {order_number} created.", "success")
+        flash(
+            f"Order {order_number} created with {order.shipping_summary.lower()}.",
+            "success",
+        )
         return redirect(url_for("orders.detail", order_id=order.id))
 
-    return render_template("orders/new.html", customers=customers, products=products)
+    return render_new_order()
