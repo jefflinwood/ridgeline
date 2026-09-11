@@ -195,6 +195,59 @@ h2 { font-size: 1.15rem; margin-bottom: 0.8em; }
 
 .empty { color: var(--ink-soft); font-style: italic; padding: 8px 0; }
 
+/* ---------------- Data tables ---------------- */
+
+.table-scroll { overflow-x: auto; }
+.orders-table { min-width: 680px; }
+
+.orders-panel div.dt-container {
+  color: var(--ink-soft);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+}
+
+.orders-panel div.dt-container .dt-layout-row:first-child {
+  margin-top: 0;
+}
+
+.orders-panel div.dt-container .dt-search input,
+.orders-panel div.dt-container .dt-length select {
+  border-color: var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.orders-panel div.dt-container .dt-search input {
+  min-width: 220px;
+  margin-left: 0;
+}
+
+.orders-panel div.dt-container .dt-paging .dt-paging-button {
+  border: 1px solid transparent !important;
+  border-radius: 5px;
+  color: var(--ink-soft) !important;
+}
+
+.orders-panel div.dt-container .dt-paging .dt-paging-button.current,
+.orders-panel div.dt-container .dt-paging .dt-paging-button.current:hover {
+  background: var(--espresso) !important;
+  border-color: var(--espresso) !important;
+  color: var(--surface) !important;
+}
+
+.orders-panel table.dataTable > thead > tr > th {
+  border-bottom-color: var(--line);
+}
+
+.orders-panel table.dataTable > tbody > tr > td {
+  box-shadow: none;
+}
+
+.orders-panel table.dataTable > tbody > tr:hover > * {
+  background: #FAF4E8;
+}
+
 /* ---------------- Stats ---------------- */
 
 .stat-row {

@@ -1,5 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Orders · Ridgeline Coffee{% endblock %}
+{% block page_styles %}
+<link rel="stylesheet" href="https://cdn.datatables.net/3.0.3/css/dataTables.dataTables.css">
+{% endblock %}
 {% block content %}
 <header class="page-head">
   <h1>Orders</h1>
@@ -18,8 +21,9 @@
 </div>
 {% endif %}
 
-<section class="panel">
-  <table class="table">
+<section class="panel orders-panel">
+  <div class="table-scroll">
+  <table id="orders-table" class="table orders-table">
     <thead>
       <tr>
         <th>Order</th>
@@ -34,15 +38,30 @@
         {% if current_user.is_staff %}<td>{{ order.customer.name }}</td>{% endif %}
         <td>{{ order.order_type }}</td>
         <td><span class="badge badge-{{ order.status }}">{{ order.status }}</span></td>
-        <td>{{ order.order_date.strftime('%b %-d, %Y') }}</td>
-        <td>${{ "%.2f"|format(order.total_amount) }}</td>
+        <td data-order="{{ order.order_date.isoformat() }}">{{ order.order_date.strftime('%b %-d, %Y') }}</td>
+        <td data-order="{{ order.total_amount }}">${{ "%.2f"|format(order.total_amount) }}</td>
       </tr>
-      {% else %}
-      <tr><td colspan="6" class="empty">No orders yet.</td></tr>
       {% endfor %}
     </tbody>
   </table>
+  </div>
 </section>
 
 <a class="btn btn-primary" href="{{ url_for('orders.new') }}">New order</a>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="https://cdn.datatables.net/3.0.3/js/dataTables.js"></script>
+<script>
+  new DataTable('#orders-table', {
+    order: [[{{ 4 if current_user.is_staff else 3 }}, 'desc']],
+    pageLength: 10,
+    lengthMenu: [10, 25, 50],
+    language: {
+      emptyTable: 'No orders yet.',
+      search: '',
+      searchPlaceholder: 'Search orders…'
+    }
+  });
+</script>
 {% endblock %}
