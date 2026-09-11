@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Ridgeline Coffee{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="{{ 'has-nav' if current_user.is_authenticated else '' }}">
+  {% if current_user.is_authenticated %}
+  <div class="shell">
+    <nav class="rail">
+      <div class="rail-brand">
+        <span class="mark">R</span>
+        <span class="brand-text">Ridgeline<br>Coffee</span>
+      </div>
+      <ul class="rail-nav">
+        <li><a href="{{ url_for('dashboard.index') }}" class="{{ 'is-active' if request.endpoint == 'dashboard.index' }}">Overview</a></li>
+        {% if current_user.is_staff %}
+        <li><a href="{{ url_for('customers.index') }}" class="{{ 'is-active' if request.blueprint == 'customers' }}">Accounts</a></li>
+        {% endif %}
+        <li><a href="{{ url_for('orders.index') }}" class="{{ 'is-active' if request.blueprint == 'orders' }}">Orders</a></li>
+        <li><a href="{{ url_for('subscriptions.index') }}" class="{{ 'is-active' if request.blueprint == 'subscriptions' }}">Subscriptions</a></li>
+        <li><a href="{{ url_for('catalog.products') }}" class="{{ 'is-active' if request.endpoint == 'catalog.products' }}">Products</a></li>
+        {% if current_user.is_staff %}
+        <li><a href="{{ url_for('catalog.inventory') }}" class="{{ 'is-active' if request.endpoint == 'catalog.inventory' }}">Green coffee</a></li>
+        <li><a href="{{ url_for('roasting.index') }}" class="{{ 'is-active' if request.blueprint == 'roasting' }}">Roast log</a></li>
+        {% endif %}
+        {% if current_user.is_admin %}
+        <li><a href="{{ url_for('admin.users') }}" class="{{ 'is-active' if request.blueprint == 'admin' }}">Users</a></li>
+        {% endif %}
+        {% if current_user.is_staff %}
+        <li><a href="{{ url_for('export.ridgeline_xlsx') }}">Export to Excel</a></li>
+        {% endif %}
+      </ul>
+      <div class="rail-footer">
+        <div class="who">
+          <span class="who-name">{{ current_user.name }}</span>
+          <span class="who-role">{{ current_user.role }}</span>
+        </div>
+        <a href="{{ url_for('auth.logout') }}" class="sign-out">Sign out</a>
+      </div>
+    </nav>
+    <main class="content">
+      {% include 'partials/flashes.html' %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+  {% else %}
+    {% include 'partials/flashes.html' %}
+    {% block bare_content %}{% endblock %}
+  {% endif %}
+</body>
+</html>

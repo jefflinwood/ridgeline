@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}New order · Ridgeline Coffee{% endblock %}
+{% block content %}
+<header class="page-head">
+  <h1>New order</h1>
+  <p class="page-sub">Wholesale accounts order by the case; retail customers order by the bag.</p>
+</header>
+
+<section class="panel panel-narrow">
+  <form method="post" class="form-grid">
+    {% if current_user.is_staff %}
+    <label for="customer_id">Account</label>
+    <select id="customer_id" name="customer_id" required>
+      {% for c in customers %}
+      <option value="{{ c.id }}">{{ c.name }} ({{ c.type }})</option>
+      {% endfor %}
+    </select>
+    {% else %}
+    <input type="hidden" name="customer_id" value="{{ customers[0].id }}">
+    <p>Ordering as <strong>{{ customers[0].name }}</strong> ({{ customers[0].type }})</p>
+    {% endif %}
+
+    <fieldset class="line-items">
+      <legend>Products</legend>
+      {% for p in products %}
+      <div class="line-item">
+        <input type="hidden" name="product_id" value="{{ p.id }}">
+        <span class="line-item-name">{{ p.name }} <small>{{ p.origin }} · {{ p.roast_level }}</small></span>
+        <input type="number" name="quantity" min="0" value="0" class="qty-input">
+      </div>
+      {% endfor %}
+    </fieldset>
+
+    <label for="notes">Notes</label>
+    <textarea id="notes" name="notes" rows="2" placeholder="Delivery instructions, rush requests, etc."></textarea>
+
+    <button type="submit" class="btn btn-primary">Place order</button>
+  </form>
+</section>
+{% endblock %}

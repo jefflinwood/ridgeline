@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}{{ order.order_number }} · Ridgeline Coffee{% endblock %}
+{% block content %}
+<header class="page-head">
+  <p class="eyebrow-plain"><a href="{{ url_for('orders.index') }}">Orders</a></p>
+  <h1>{{ order.order_number }}</h1>
+  <p class="page-sub">{{ order.customer.name }} · {{ order.order_type }} · placed {{ order.order_date.strftime('%b %-d, %Y') }}</p>
+</header>
+
+<div class="split">
+  <section class="panel">
+    <h2>Items</h2>
+    <table class="table">
+      <thead><tr><th>Product</th><th>Qty</th><th>Unit price</th><th>Line total</th></tr></thead>
+      <tbody>
+        {% for item in order.items %}
+        <tr>
+          <td>{{ item.product.name }}</td>
+          <td>{{ item.quantity }}</td>
+          <td>${{ "%.2f"|format(item.unit_price) }}</td>
+          <td>${{ "%.2f"|format(item.line_total) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr><td colspan="3">Total</td><td>${{ "%.2f"|format(order.total_amount) }}</td></tr>
+      </tfoot>
+    </table>
+    {% if order.notes %}<p class="notes">{{ order.notes }}</p>{% endif %}
+  </section>
+
+  <section class="panel">
+    <h2>Status</h2>
+    <p><span class="badge badge-{{ order.status }}">{{ order.status }}</span></p>
+    {% if current_user.is_staff %}
+    <form method="post" action="{{ url_for('orders.update_status', order_id=order.id) }}" class="inline-form">
+      <select name="status">
+        {% for s in statuses %}
+        <option value="{{ s }}" {{ 'selected' if s == order.status }}>{{ s }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn btn-secondary">Update</button>
+    </form>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

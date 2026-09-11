@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Users · Ridgeline Coffee{% endblock %}
+{% block content %}
+<header class="page-head">
+  <h1>Users</h1>
+  <p class="page-sub">Everyone with access to the Ridgeline app.</p>
+</header>
+
+<section class="panel">
+  <table class="table">
+    <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Account</th></tr></thead>
+    <tbody>
+      {% for u in users %}
+      <tr>
+        <td>{{ u.name }}</td>
+        <td>{{ u.email }}</td>
+        <td>{{ u.role }}</td>
+        <td>{{ u.customer.name if u.customer else '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<a class="btn btn-primary" href="{{ url_for('admin.new_user') }}">New user</a>
+{% endblock %}

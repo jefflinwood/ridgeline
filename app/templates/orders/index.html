@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Orders · Ridgeline Coffee{% endblock %}
+{% block content %}
+<header class="page-head">
+  <h1>Orders</h1>
+  <p class="page-sub">
+    {% if current_user.is_staff %}Wholesale case orders and retail bag orders.{% else %}Your order history.{% endif %}
+  </p>
+</header>
+
+{% if current_user.is_staff %}
+<div class="filter-row">
+  <a href="{{ url_for('orders.index') }}" class="chip {{ 'is-active' if not active_status and not active_type }}">All</a>
+  <a href="{{ url_for('orders.index', type='wholesale') }}" class="chip {{ 'is-active' if active_type == 'wholesale' }}">Wholesale</a>
+  <a href="{{ url_for('orders.index', type='retail') }}" class="chip {{ 'is-active' if active_type == 'retail' }}">Retail</a>
+  <a href="{{ url_for('orders.index', status='pending') }}" class="chip {{ 'is-active' if active_status == 'pending' }}">Pending</a>
+  <a href="{{ url_for('orders.index', status='shipped') }}" class="chip {{ 'is-active' if active_status == 'shipped' }}">Shipped</a>
+</div>
+{% endif %}
+
+<section class="panel">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Order</th>
+        {% if current_user.is_staff %}<th>Account</th>{% endif %}
+        <th>Type</th><th>Status</th><th>Placed</th><th>Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for order in orders %}
+      <tr>
+        <td><a href="{{ url_for('orders.detail', order_id=order.id) }}">{{ order.order_number }}</a></td>
+        {% if current_user.is_staff %}<td>{{ order.customer.name }}</td>{% endif %}
+        <td>{{ order.order_type }}</td>
+        <td><span class="badge badge-{{ order.status }}">{{ order.status }}</span></td>
+        <td>{{ order.order_date.strftime('%b %-d, %Y') }}</td>
+        <td>${{ "%.2f"|format(order.total_amount) }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="empty">No orders yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<a class="btn btn-primary" href="{{ url_for('orders.new') }}">New order</a>
+{% endblock %}

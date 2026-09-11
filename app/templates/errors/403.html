@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Not permitted · Ridgeline Coffee{% endblock %}
+{% block content %}
+<section class="panel panel-narrow">
+  <h1>Not permitted</h1>
+  <p>Your account doesn't have access to that page.</p>
+  <a class="btn btn-primary" href="{{ url_for('dashboard.index') }}">Back to overview</a>
+</section>
+{% endblock %}
+{% block bare_content %}
+<div class="auth-screen">
+  <div class="auth-card">
+    <h1>Not permitted</h1>
+    <p>Sign in with an account that has access to that page.</p>
+    <a class="btn btn-primary" href="{{ url_for('auth.login') }}">Sign in</a>
+  </div>
+</div>
+{% endblock %}

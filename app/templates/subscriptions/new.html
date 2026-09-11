@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}New subscription · Ridgeline Coffee{% endblock %}
+{% block content %}
+<header class="page-head">
+  <h1>New subscription</h1>
+</header>
+
+<section class="panel panel-narrow">
+  <form method="post" class="form-grid">
+    {% if current_user.is_staff %}
+    <label for="customer_id">Customer</label>
+    <select id="customer_id" name="customer_id" required>
+      {% for c in customers %}
+      <option value="{{ c.id }}">{{ c.name }}</option>
+      {% endfor %}
+    </select>
+    {% else %}
+    <input type="hidden" name="customer_id" value="{{ customers[0].id }}">
+    {% endif %}
+
+    <label for="product_id">Product</label>
+    <select id="product_id" name="product_id" required>
+      {% for p in products %}
+      <option value="{{ p.id }}">{{ p.name }} — {{ p.origin }}</option>
+      {% endfor %}
+    </select>
+
+    <label for="quantity">Bags per shipment</label>
+    <input type="number" id="quantity" name="quantity" min="1" value="1">
+
+    <label for="frequency">Frequency</label>
+    <select id="frequency" name="frequency">
+      {% for f in frequencies %}
+      <option value="{{ f }}" {{ 'selected' if f == 'monthly' }}>{{ f }}</option>
+      {% endfor %}
+    </select>
+
+    <button type="submit" class="btn btn-primary">Start subscription</button>
+  </form>
+</section>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Sign in · Ridgeline Coffee{% endblock %}
+{% block bare_content %}
+<div class="auth-screen">
+  <div class="auth-card">
+    <div class="auth-mark">R</div>
+    <h1>Ridgeline Coffee</h1>
+    <p class="auth-sub">Roastery operations &amp; account portal</p>
+    <form method="post" class="auth-form">
+      <label for="email">Email</label>
+      <input type="email" id="email" name="email" autocomplete="username" required autofocus>
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" autocomplete="current-password" required>
+      <button type="submit" class="btn btn-primary btn-block">Sign in</button>
+    </form>
+    <div class="auth-hint">
+      <p>Demo accounts (seeded by <code>seed.py</code>):</p>
+      <ul>
+        <li><code>admin@ridgelinecoffee.com</code> / <code>ridgeline123</code> — admin</li>
+        <li><code>maria@ridgelinecoffee.com</code> / <code>ridgeline123</code> — roastery staff</li>
+        <li><code>orders@northsidecafe.com</code> / <code>ridgeline123</code> — wholesale account</li>
+        <li><code>jsmith@example.com</code> / <code>ridgeline123</code> — retail subscriber</li>
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

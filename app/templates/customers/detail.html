@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}{{ customer.name }} · Ridgeline Coffee{% endblock %}
+{% block content %}
+<header class="page-head">
+  <p class="eyebrow-plain"><a href="{{ url_for('customers.index') }}">Accounts</a></p>
+  <h1>{{ customer.name }}</h1>
+  <p class="page-sub">{{ customer.type|capitalize }} account · {{ customer.city }}, {{ customer.state }} {{ customer.country }}</p>
+</header>
+
+<div class="split">
+  <section class="panel">
+    <h2>Contact</h2>
+    <dl class="deflist">
+      <dt>Email</dt><dd>{{ customer.email or '—' }}</dd>
+      <dt>Phone</dt><dd>{{ customer.phone or '—' }}</dd>
+      <dt>Address</dt><dd>{{ customer.address or '—' }}</dd>
+      <dt>Currency</dt><dd>{{ customer.currency }}</dd>
+    </dl>
+    {% if customer.notes %}<p class="notes">{{ customer.notes }}</p>{% endif %}
+  </section>
+
+  <section class="panel">
+    <h2>Orders</h2>
+    {% if customer.orders %}
+    <table class="table">
+      <thead><tr><th>Order</th><th>Status</th><th>Placed</th><th>Total</th></tr></thead>
+      <tbody>
+        {% for order in customer.orders|sort(attribute='order_date', reverse=True) %}
+        <tr>
+          <td><a href="{{ url_for('orders.detail', order_id=order.id) }}">{{ order.order_number }}</a></td>
+          <td><span class="badge badge-{{ order.status }}">{{ order.status }}</span></td>
+          <td>{{ order.order_date.strftime('%b %-d, %Y') }}</td>
+          <td>${{ "%.2f"|format(order.total_amount) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="empty">No orders yet.</p>
+    {% endif %}
+  </section>
+</div>
+
+{% if customer.subscriptions %}
+<section class="panel">
+  <h2>Subscriptions</h2>
+  <ul class="sub-list">
+    {% for sub in customer.subscriptions %}
+    <li>
+      <span>{{ sub.product.name }} · {{ sub.quantity }} × {{ sub.frequency }}</span>
+      <span class="badge badge-{{ sub.status }}">{{ sub.status }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% endblock %}

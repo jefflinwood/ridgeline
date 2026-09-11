@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Overview · Ridgeline Coffee{% endblock %}
+{% block content %}
+<header class="page-head">
+  <h1>Good to see you, {{ current_user.name.split(' ')[0] }}</h1>
+  <p class="page-sub">Here's where the roastery stands today.</p>
+</header>
+
+<section class="stat-row">
+  <div class="stat">
+    <span class="stat-value">{{ open_orders|length }}</span>
+    <span class="stat-label">Open orders</span>
+  </div>
+  <div class="stat">
+    <span class="stat-value">{{ wholesale_count }}</span>
+    <span class="stat-label">Wholesale accounts</span>
+  </div>
+  <div class="stat">
+    <span class="stat-value">{{ retail_count }}</span>
+    <span class="stat-label">Retail customers</span>
+  </div>
+  <div class="stat">
+    <span class="stat-value">{{ active_subs }}</span>
+    <span class="stat-label">Active subscriptions</span>
+  </div>
+</section>
+
+<div class="split">
+  <section class="panel">
+    <h2>Open orders</h2>
+    {% if open_orders %}
+    <table class="table">
+      <thead><tr><th>Order</th><th>Account</th><th>Status</th><th>Placed</th></tr></thead>
+      <tbody>
+        {% for order in open_orders[:8] %}
+        <tr>
+          <td><a href="{{ url_for('orders.detail', order_id=order.id) }}">{{ order.order_number }}</a></td>
+          <td>{{ order.customer.name }}</td>
+          <td><span class="badge badge-{{ order.status }}">{{ order.status }}</span></td>
+          <td>{{ order.order_date.strftime('%b %-d') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="empty">No open orders right now.</p>
+    {% endif %}
+  </section>
+
+  <section class="panel">
+    <h2>Green coffee running low</h2>
+    {% if low_lots %}
+    <table class="table">
+      <thead><tr><th>Lot</th><th>Origin</th><th>Remaining</th></tr></thead>
+      <tbody>
+        {% for lot in low_lots %}
+        <tr>
+          <td>{{ lot.lot_code }}</td>
+          <td>{{ lot.origin }}</td>
+          <td>{{ lot.weight_kg_remaining }} kg</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="empty">All lots are well stocked.</p>
+    {% endif %}
+  </section>
+</div>
+
+{% if low_stock_products %}
+<section class="panel">
+  <h2>Roasted stock running low</h2>
+  <table class="table">
+    <thead><tr><th>SKU</th><th>Product</th><th>Cases in stock</th></tr></thead>
+    <tbody>
+      {% for p in low_stock_products %}
+      <tr><td>{{ p.sku }}</td><td>{{ p.name }}</td><td>{{ p.cases_in_stock }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}
+{% endblock %}

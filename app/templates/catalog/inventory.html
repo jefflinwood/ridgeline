@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Green coffee · Ridgeline Coffee{% endblock %}
+{% block content %}
+<header class="page-head">
+  <h1>Green coffee inventory</h1>
+  <p class="page-sub">Unroasted lots on hand in the warehouse.</p>
+</header>
+
+<section class="panel">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Lot</th><th>Origin</th><th>Farm / co-op</th><th>Process</th>
+        <th>Arrived</th><th>Received</th><th>Remaining</th><th>Cost / kg</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for lot in lots %}
+      <tr class="{{ 'is-low' if lot.is_low }}">
+        <td>{{ lot.lot_code }}</td>
+        <td>{{ lot.origin }}</td>
+        <td>{{ lot.farm_or_coop or '—' }}</td>
+        <td>{{ lot.process or '—' }}</td>
+        <td>{{ lot.arrival_date.strftime('%b %-d, %Y') }}</td>
+        <td>{{ lot.weight_kg_received }} kg</td>
+        <td>{{ lot.weight_kg_remaining }} kg {% if lot.is_low %}<span class="badge badge-cancelled">low</span>{% endif %}</td>
+        <td>${{ "%.2f"|format(lot.cost_per_kg_usd) }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" class="empty">No lots on file.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

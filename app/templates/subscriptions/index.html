@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Subscriptions · Ridgeline Coffee{% endblock %}
+{% block content %}
+<header class="page-head">
+  <h1>Subscriptions</h1>
+  <p class="page-sub">Recurring retail bag subscriptions.</p>
+</header>
+
+<section class="panel">
+  <table class="table">
+    <thead>
+      <tr>
+        {% if current_user.is_staff %}<th>Customer</th>{% endif %}
+        <th>Product</th><th>Qty</th><th>Frequency</th><th>Next ship</th><th>Status</th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for sub in subscriptions %}
+      <tr>
+        {% if current_user.is_staff %}<td>{{ sub.customer.name }}</td>{% endif %}
+        <td>{{ sub.product.name }}</td>
+        <td>{{ sub.quantity }}</td>
+        <td>{{ sub.frequency }}</td>
+        <td>{{ sub.next_ship_date.strftime('%b %-d, %Y') if sub.next_ship_date else '—' }}</td>
+        <td><span class="badge badge-{{ sub.status }}">{{ sub.status }}</span></td>
+        <td class="row-actions">
+          {% if sub.status == 'active' %}
+          <form method="post" action="{{ url_for('subscriptions.change_status', sub_id=sub.id, action='pause') }}"><button class="link-btn">Pause</button></form>
+          {% elif sub.status == 'paused' %}
+          <form method="post" action="{{ url_for('subscriptions.change_status', sub_id=sub.id, action='resume') }}"><button class="link-btn">Resume</button></form>
+          {% endif %}
+          {% if sub.status != 'cancelled' %}
+          <form method="post" action="{{ url_for('subscriptions.change_status', sub_id=sub.id, action='cancel') }}"><button class="link-btn link-btn-danger">Cancel</button></form>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="empty">No subscriptions yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<a class="btn btn-primary" href="{{ url_for('subscriptions.new') }}">New subscription</a>
+{% endblock %}

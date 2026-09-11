@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Overview · Ridgeline Coffee{% endblock %}
+{% block content %}
+<header class="page-head">
+  <h1>Welcome back, {{ current_user.name.split(' ')[0] }}</h1>
+  <p class="page-sub">
+    {% if customer %}{{ customer.name }} — {{ customer.type }} account{% else %}Your Ridgeline account{% endif %}
+  </p>
+</header>
+
+<div class="split">
+  <section class="panel">
+    <h2>Recent orders</h2>
+    {% if orders %}
+    <table class="table">
+      <thead><tr><th>Order</th><th>Status</th><th>Placed</th><th>Total</th></tr></thead>
+      <tbody>
+        {% for order in orders[:8] %}
+        <tr>
+          <td><a href="{{ url_for('orders.detail', order_id=order.id) }}">{{ order.order_number }}</a></td>
+          <td><span class="badge badge-{{ order.status }}">{{ order.status }}</span></td>
+          <td>{{ order.order_date.strftime('%b %-d') }}</td>
+          <td>${{ "%.2f"|format(order.total_amount) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="empty">No orders yet.</p>
+    {% endif %}
+    <a class="btn btn-primary" href="{{ url_for('orders.new') }}">Place an order</a>
+  </section>
+
+  <section class="panel">
+    <h2>Subscriptions</h2>
+    {% if subscriptions %}
+    <ul class="sub-list">
+      {% for sub in subscriptions %}
+      <li>
+        <span>{{ sub.product.name }} · {{ sub.quantity }} × {{ sub.frequency }}</span>
+        <span class="badge badge-{{ sub.status }}">{{ sub.status }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="empty">No subscriptions yet.</p>
+    {% endif %}
+    <a class="btn btn-secondary" href="{{ url_for('subscriptions.index') }}">Manage subscriptions</a>
+  </section>
+</div>
+{% endblock %}

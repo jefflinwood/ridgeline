@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Accounts · Ridgeline Coffee{% endblock %}
+{% block content %}
+<header class="page-head">
+  <h1>Accounts</h1>
+  <p class="page-sub">Wholesale cafes, offices, and hotel accounts, plus retail subscribers.</p>
+</header>
+
+<div class="filter-row">
+  <a href="{{ url_for('customers.index') }}" class="chip {{ 'is-active' if not type_filter }}">All</a>
+  <a href="{{ url_for('customers.index', type='wholesale') }}" class="chip {{ 'is-active' if type_filter == 'wholesale' }}">Wholesale</a>
+  <a href="{{ url_for('customers.index', type='retail') }}" class="chip {{ 'is-active' if type_filter == 'retail' }}">Retail</a>
+</div>
+
+<section class="panel">
+  <table class="table">
+    <thead><tr><th>Name</th><th>Type</th><th>City</th><th>Open orders</th><th>Since</th></tr></thead>
+    <tbody>
+      {% for customer in customers %}
+      <tr>
+        <td><a href="{{ url_for('customers.detail', customer_id=customer.id) }}">{{ customer.name }}</a></td>
+        <td>{{ customer.type }}</td>
+        <td>{{ customer.city }}, {{ customer.state }}</td>
+        <td>{{ customer.open_order_count }}</td>
+        <td>{{ customer.created_at.strftime('%b %Y') }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="empty">No accounts yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

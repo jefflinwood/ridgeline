@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Products · Ridgeline Coffee{% endblock %}
+{% block content %}
+<header class="page-head">
+  <h1>Products</h1>
+  <p class="page-sub">Roasted SKUs, priced by the case (wholesale) and by the bag (retail).</p>
+</header>
+
+<section class="panel">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>SKU</th><th>Name</th><th>Origin</th><th>Roast</th>
+        <th>Wholesale / case</th><th>Retail / bag</th><th>Cases</th><th>Bags</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in products %}
+      <tr>
+        <td>{{ p.sku }}</td>
+        <td>{{ p.name }}</td>
+        <td>{{ p.origin }}{% if p.process %} · {{ p.process }}{% endif %}</td>
+        <td>{{ p.roast_level }}</td>
+        <td>${{ "%.2f"|format(p.wholesale_price_per_case) }}</td>
+        <td>${{ "%.2f"|format(p.retail_price_per_bag) }}</td>
+        <td>{{ p.cases_in_stock }}</td>
+        <td>{{ p.bags_in_stock }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" class="empty">No products yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}
