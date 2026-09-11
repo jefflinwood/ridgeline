@@ -53,6 +53,12 @@ pytest
 Tests use an isolated in-memory SQLite database and never read, reset, or
 modify `ridgeline.db`.
 
+GitHub Actions runs the same suite for every pull request, push to `main`,
+and merge-queue check. To enforce it as a merge gate, open the repository's
+**Settings → Rules → Rulesets**, add a branch ruleset for `main`, enable
+**Require status checks to pass**, and select the `Tests` check from the
+`CI` workflow after its first run.
+
 ## Using this for the Claude training exercises
 
 Three integration points, each independent of the others:
