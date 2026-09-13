@@ -13,6 +13,8 @@ from app.models import (
 )
 
 DEFAULT_PASSWORD = "ridgeline123"
+DEMO_ORDER_COUNT = 500
+SHIPPING_EXAMPLE_ORDER_COUNT = 2
 
 
 def ensure_shipping_seeded():
@@ -329,6 +331,49 @@ def populate():
               status="shipped", order_date=datetime(2026, 8, 30, 12, 0),
               items=[bag_item(by_sku["SUM-MAN-DK"], 2)]),
     ]
+
+    # Fill out a deterministic order history for list, dashboard, API, and
+    # reporting demos. Two additional showcase orders are added later by
+    # ensure_shipping_seeded(), bringing the final total to DEMO_ORDER_COUNT.
+    generated_order_count = DEMO_ORDER_COUNT - len(orders) - SHIPPING_EXAMPLE_ORDER_COUNT
+    all_customers = wholesale + retail
+    status_cycle = (
+        ["delivered"] * 11
+        + ["shipped"] * 3
+        + ["cancelled"] * 2
+        + ["pending"] * 2
+        + ["confirmed"]
+        + ["roasting"]
+    )
+    first_order_date = datetime(2025, 5, 1, 8, 0)
+    for index in range(generated_order_count):
+        customer = all_customers[index % len(all_customers)]
+        ordered_at = first_order_date + timedelta(
+            days=index % 490,
+            hours=(index * 7) % 10,
+            minutes=(index * 13) % 60,
+        )
+        item_count = 1 + (index % 3)
+        selected_products = [products[(index + offset * 2) % len(products)]
+                             for offset in range(item_count)]
+        if customer.type == "wholesale":
+            items = [case_item(product, 2 + ((index + offset * 3) % 15))
+                     for offset, product in enumerate(selected_products)]
+            prefix = "WS"
+        else:
+            items = [bag_item(product, 1 + ((index + offset) % 4))
+                     for offset, product in enumerate(selected_products)]
+            prefix = "RT"
+
+        orders.append(Order(
+            order_number=f"{prefix}-{ordered_at:%Y%m%d}-{index + 100:04d}",
+            customer=customer,
+            order_type=customer.type,
+            status=status_cycle[index % len(status_cycle)],
+            order_date=ordered_at,
+            requested_ship_date=(ordered_at + timedelta(days=2 + index % 6)).date(),
+            items=items,
+        ))
     db.session.add_all(orders)
 
     # ---------------- Subscriptions ----------------
