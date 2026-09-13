@@ -92,15 +92,11 @@ manually with:
 - Start command: `gunicorn run:app --bind 0.0.0.0:$PORT --workers 2`
 
 Render provides `SECRET_KEY` and `RIDGELINE_API_KEY` automatically via
-`render.yaml` (`generateValue: true`). The free plan has no persistent
-disk, so the SQLite file resets on every redeploy or spin-down from idle —
-`app/bootstrap.py` re-seeds automatically whenever it finds an empty
-database, so the app always comes back with working demo data. That's
-convenient for a training exercise (always a clean slate) but means
-anything logged mid-session (a roast batch, an order status change) won't
-survive a spin-down. If you need state to persist across a full training
-day, add a paid persistent disk or point `DATABASE_URL` at a Render
-Postgres instance instead.
+`render.yaml` (`generateValue: true`). The Blueprint also provisions a
+paid Render Postgres database and supplies its internal connection string
+to the app as `DATABASE_URL`. `app/bootstrap.py` creates the schema and
+loads the demo data when the database is empty; later deploys preserve
+changes made during the demo.
 
 ## Demo accounts
 
