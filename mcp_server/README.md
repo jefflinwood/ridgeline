@@ -1,11 +1,32 @@
 # Ridgeline Coffee MCP server
 
-A small stdio MCP server that lets Claude answer questions about Ridgeline
+A small MCP server that lets Claude answer questions about Ridgeline
 Coffee directly — pending orders, low inventory, account lookups, roast
 batches, subscriptions — by calling the Flask app's internal JSON API
 (`app/api.py`), not the database file. That's the same pattern a real
-internal MCP connector would use, and it means this server works unchanged
-whether the app is running on localhost or deployed to Render.
+internal MCP connector would use. It supports both local stdio and hosted
+Streamable HTTP transports.
+
+## Connect to the hosted server
+
+The Render deployment exposes the MCP endpoint alongside the website:
+
+```text
+https://<your-render-app>.onrender.com/mcp
+```
+
+Use that URL in any MCP client that supports remote Streamable HTTP servers.
+No local Python process or API key is required by the client. The MCP OAuth
+flow opens a Ridgeline page where the participant enters the class password.
+
+Render generates `MCP_CLASS_PASSWORD` on the first Blueprint deployment. Copy
+its value from the service's Environment page and share it with the class. The
+MCP endpoint returns `401` until the client completes OAuth; authorization
+codes expire after five minutes and access tokens after eight hours.
+
+To serve a custom domain, set `MCP_PUBLIC_BASE_URL` to its HTTPS origin and add
+its host to the comma-separated `MCP_ALLOWED_HOSTS` environment variable.
+Browser-based MCP clients also need their origins in `MCP_ALLOWED_ORIGINS`.
 
 ## Setup
 
@@ -14,7 +35,7 @@ cd mcp_server
 pip install -r requirements.txt
 ```
 
-## Configure in Claude Desktop
+## Configure a local stdio server
 
 Add to your Claude Desktop config (`claude_desktop_config.json`):
 
@@ -33,7 +54,8 @@ Add to your Claude Desktop config (`claude_desktop_config.json`):
 }
 ```
 
-To point at a deployed Render instance instead of localhost, change
+To run the stdio process against a deployed Render instance instead of
+localhost, change
 `RIDGELINE_API_BASE_URL` to `https://<your-render-app>.onrender.com/api`
 and set `RIDGELINE_API_KEY` to match whatever you set as the
 `RIDGELINE_API_KEY` environment variable on Render.
@@ -56,9 +78,14 @@ and set `RIDGELINE_API_KEY` to match whatever you set as the
 
 ## Notes
 
-- Auth is a single shared `X-API-Key` header — fine for a training demo,
-  not a real auth scheme. Set `RIDGELINE_API_KEY` on both the Flask app
-  and this server to the same value.
-- The Flask app must be running (locally or on Render) for this server to
-  answer anything — it's a thin client over the API, with no database
-  access of its own.
+- The hosted transport uses MCP-native OAuth 2.1 with dynamic client
+  registration, PKCE, bearer tokens, and the `MCP_CLASS_PASSWORD` sign-in.
+  The internal `/api/*` calls use the separate `RIDGELINE_API_KEY`; that key
+  is never sent to MCP clients.
+- The Flask app must be running for the stdio server to answer anything —
+  it's a thin client over the API, with no database access of its own.
+- On Render, `web.py` serves Flask and MCP from one ASGI process. The MCP
+  endpoint calls the Flask API over the service's local HTTP port.
+- OAuth registrations and tokens are intentionally held in memory for this
+  classroom demo. Keep one Uvicorn worker; a restart asks clients to connect
+  again.

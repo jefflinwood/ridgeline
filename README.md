@@ -75,12 +75,12 @@ Three integration points, each independent of the others:
    batch of scanned paper roast sheets into the roast log form. Point it at
    the deployed Render URL (see below) rather than localhost so it's not
    fighting a local-only server.
-3. **MCP for direct Q&A.** `mcp_server/server.py` is a stdio MCP server
-   with tools for pending orders, low stock, account lookups, roast
-   batches, and subscriptions (see `mcp_server/README.md`). It calls the
-   app's `/api/*` JSON endpoints — not the database directly — the same
-   pattern a real internal connector would use, and it works against
-   either localhost or the Render deployment by changing one env var.
+3. **MCP for direct Q&A.** The Render site exposes a Streamable HTTP MCP
+   server at `/mcp`, so class participants can connect without running Python
+   locally. `mcp_server/server.py` can still run as a local stdio MCP server.
+   Its tools cover pending orders, low stock, account lookups, roast batches,
+   and subscriptions. Hosted connections use OAuth and the generated class
+   password (see `mcp_server/README.md`).
 
 ## Deploying to Render
 
@@ -89,14 +89,19 @@ Push this repo to GitHub, then either use the included `render.yaml`
 manually with:
 
 - Build command: `pip install -r requirements.txt`
-- Start command: `gunicorn run:app --bind 0.0.0.0:$PORT --workers 2`
+- Start command: `uvicorn web:app --host 0.0.0.0 --port $PORT --workers 1 --proxy-headers --forwarded-allow-ips '*'`
 
-Render provides `SECRET_KEY` and `RIDGELINE_API_KEY` automatically via
-`render.yaml` (`generateValue: true`). The Blueprint also provisions a
-paid Render Postgres database and supplies its internal connection string
-to the app as `DATABASE_URL`. `app/bootstrap.py` creates the schema and
-loads the demo data when the database is empty; later deploys preserve
-changes made during the demo.
+Render provides `SECRET_KEY`, `RIDGELINE_API_KEY`, and `MCP_CLASS_PASSWORD`
+automatically via `render.yaml` (`generateValue: true`). Copy the generated
+class password from the service's Environment page and give it to participants.
+If you create the service manually, set all three environment variables before
+starting it; `web.py` refuses to start without `MCP_CLASS_PASSWORD`.
+The Blueprint also provisions a paid Render Postgres database and supplies its
+internal connection string to the app as `DATABASE_URL`. `app/bootstrap.py`
+creates the schema and loads the demo data when the database is empty; later
+deploys preserve changes made during the demo. After deployment, connect an
+MCP client to `https://<your-render-app>.onrender.com/mcp` and complete the
+browser sign-in.
 
 ## Demo accounts
 
@@ -125,7 +130,8 @@ demo, or export `Ridgeline_Orders`-style views for the Excel demo.
 ## Project layout
 
 ```
-run.py                 entrypoint
+run.py                 local Flask development entrypoint
+web.py                 Render ASGI entrypoint (Flask site + /mcp)
 config.py               config (reads DATABASE_URL / SECRET_KEY from env if set)
 seed.py                 CLI demo data loader (destructive reset)
 Procfile, render.yaml   Render deployment config
@@ -135,14 +141,16 @@ app/
   demo_data.py             shared seed data (used by seed.py and bootstrap.py)
   models.py                SQLAlchemy models, including shipping and warehouses
   api.py                   internal JSON API (X-API-Key auth), used by MCP server
+  mcp_auth.py              class-password OAuth approval page
   export.py, export_routes.py   Excel workbook builder + route
   auth.py, dashboard.py, customers.py, catalog.py,
   roasting.py, orders.py, shipping.py, subscriptions.py, admin.py   blueprints
   templates/               Jinja2 templates, one folder per blueprint
   static/css/style.css      design system (single stylesheet)
 mcp_server/
-  server.py               stdio MCP server (calls app/api.py over HTTP)
-  README.md                Claude Desktop config + tool reference
+  oauth.py                OAuth provider and short-lived credential stores
+  server.py               MCP tools and local stdio entrypoint
+  README.md                hosted/local connection setup + tool reference
 ```
 
 ## Notes for extending it

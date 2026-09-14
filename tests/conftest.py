@@ -21,6 +21,7 @@ class TestConfig:
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     AUTO_SEED = False
+    MCP_CLASS_PASSWORD = "test-class-password"
 
 
 @pytest.fixture

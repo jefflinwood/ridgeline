@@ -33,6 +33,7 @@ def create_app(config_object="config.Config"):
     from app.export_routes import bp as export_bp
     from app.api import bp as api_bp
     from app.shipping import bp as shipping_bp
+    from app.mcp_auth import bp as mcp_auth_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
@@ -45,6 +46,7 @@ def create_app(config_object="config.Config"):
     app.register_blueprint(export_bp)
     app.register_blueprint(api_bp)
     app.register_blueprint(shipping_bp)
+    app.register_blueprint(mcp_auth_bp)
 
     @app.context_processor
     def inject_globals():

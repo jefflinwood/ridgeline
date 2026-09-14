@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Connect MCP · Ridgeline Coffee{% endblock %}
+{% block bare_content %}
+<div class="auth-screen">
+  <div class="auth-card">
+    <div class="auth-mark">R</div>
+    <h1>Connect Ridgeline MCP</h1>
+    <p class="auth-sub">Enter the class password to authorize this connector.</p>
+    {% if error %}
+      <div class="flash flash-error">{{ error }}</div>
+    {% endif %}
+    <form method="post" class="auth-form">
+      <input type="hidden" name="request_id" value="{{ request_id }}">
+      <label for="password">Class password</label>
+      <input
+        type="password"
+        id="password"
+        name="password"
+        autocomplete="current-password"
+        required
+        autofocus
+      >
+      <button type="submit" class="btn btn-primary btn-block">Authorize connector</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

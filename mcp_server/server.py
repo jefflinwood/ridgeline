@@ -2,8 +2,9 @@
 
 Talks to the Flask app's internal JSON API (app/api.py) over HTTP rather
 than touching the database directly — the same pattern a real internal
-tool would use. Point it at a local dev server or the deployed Render URL
-via RIDGELINE_API_BASE_URL.
+tool would use. Point it at a local dev server or the deployed Render URL via
+RIDGELINE_API_BASE_URL. The Render deployment also exposes this server over
+Streamable HTTP at /mcp; see mcp_server/README.md.
 
 Run:
     RIDGELINE_API_BASE_URL=http://127.0.0.1:5000/api \
@@ -17,19 +18,35 @@ from typing import Optional
 
 import httpx
 
-try:
-    from mcp.server.fastmcp import FastMCP as _Server  # mcp < 2
-except ModuleNotFoundError:
-    from mcp.server.mcpserver import MCPServer as _Server  # mcp >= 2
+from mcp.server import MCPServer
 
-API_BASE_URL = os.environ.get("RIDGELINE_API_BASE_URL", "http://127.0.0.1:5000/api")
+if __package__:
+    from mcp_server.oauth import auth_settings, oauth_provider
+else:
+    from oauth import auth_settings, oauth_provider
+
+
+def _default_api_base_url():
+    port = os.environ.get("PORT", "5000")
+    return f"http://127.0.0.1:{port}/api"
+
+
+API_BASE_URL = os.environ.get("RIDGELINE_API_BASE_URL", _default_api_base_url())
 API_KEY = os.environ.get("RIDGELINE_API_KEY", "dev-api-key-change-me")
 
-server = _Server("ridgeline-coffee")
+server = MCPServer(
+    "ridgeline-coffee",
+    auth=auth_settings(),
+    auth_server_provider=oauth_provider,
+)
 
 
 def _client():
-    return httpx.Client(base_url=API_BASE_URL, headers={"X-API-Key": API_KEY}, timeout=10)
+    return httpx.Client(
+        base_url=API_BASE_URL,
+        headers={"X-API-Key": API_KEY},
+        timeout=10,
+    )
 
 
 @server.tool()

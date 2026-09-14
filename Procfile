@@ -1,1 +1,1 @@
-web: gunicorn run:app --bind 0.0.0.0:$PORT --workers 2
+web: uvicorn web:app --host 0.0.0.0 --port $PORT --workers 1 --proxy-headers --forwarded-allow-ips '*'
