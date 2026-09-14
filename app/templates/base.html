@@ -10,8 +10,8 @@
   {% block page_styles %}{% endblock %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body class="{{ 'has-nav' if current_user.is_authenticated else '' }}">
-  {% if current_user.is_authenticated %}
+<body class="{{ 'has-nav' if current_user.is_authenticated and not force_bare_layout|default(false) else '' }}">
+  {% if current_user.is_authenticated and not force_bare_layout|default(false) %}
   <div class="shell">
     <nav class="rail">
       <div class="rail-brand">

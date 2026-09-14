@@ -26,6 +26,7 @@ def authorize():
             "auth/mcp_authorize.html",
             request_id=request_id,
             error=None,
+            force_bare_layout=True,
         )
 
     submitted_password = request.form.get("password", "")
@@ -38,6 +39,7 @@ def authorize():
             "auth/mcp_authorize.html",
             request_id=request_id,
             error="That class password is not correct.",
+            force_bare_layout=True,
         ), 401
 
     try:

@@ -36,6 +36,17 @@ def test_mcp_authorization_requires_class_password(client):
     assert b"Enter the class password" in response.data
 
 
+def test_mcp_authorization_form_renders_when_browser_is_logged_in(client, login):
+    login("staff@example.test")
+    request_id = _begin_authorization()
+
+    response = client.get(f"/oauth/authorize?request_id={request_id}")
+
+    assert response.status_code == 200
+    assert b"Enter the class password" in response.data
+    assert b'class="auth-screen"' in response.data
+
+
 def test_mcp_authorization_rejects_wrong_class_password(client):
     request_id = _begin_authorization()
 
